@@ -1,117 +1,136 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import {
-  ArrowRight, BookOpen, CalendarDays, Check, ChevronRight, Compass,
-  FileText, Image as ImageIcon, LayoutDashboard, MapPin, Pencil, Plus,
-  Sparkles, Trash2, Upload, Video, Wallet, X,
+  ArrowDownRight, ArrowRight, ArrowUpRight, Check, Compass, Edit3,
+  ExternalLink, Mail, MapPin, Menu, Save, Sparkles, Trash2, X, Zap,
 } from 'lucide-vue-next'
 
-type Memory = {
-  id: number
-  date: string
+type Profile = {
+  name: string
+  initials: string
+  role: string
+  tagline: string
+  bio: string
   location: string
-  title: string
-  category: string
-  summary: string
-  content: string
-  expense: number
-  cover: string
+  availability: string
+  avatar: string
+  email: string
+  website: string
+  interests: string
 }
 
-const seedMemories: Memory[] = [
-  { id: 1, date: '2024-10-03', location: '京都 · 日本', title: '在秋色里慢下来', category: '灵感', summary: '沿着鸭川散步，找到一家只卖三种甜点的小店。', content: '清晨从民宿出发，沿着鸭川一路向北。风里有桂花和一点木头的味道，下午在哲学之道看完最后一片红叶。', expense: 860, cover: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=900&q=85' },
-  { id: 2, date: '2024-10-05', location: '奈良 · 日本', title: '把时间交给一座公园', category: '漫游', summary: '没有打卡清单的一天，只有鹿、树影和一碗热汤。', content: '把原本的购物计划取消，给自己留了一整天。公园里的小路很安静，落日的时候坐在池边写下这段旅程。', expense: 420, cover: 'https://images.unsplash.com/photo-1528360983277-13d401cdc186?auto=format&fit=crop&w=900&q=85' },
-  { id: 3, date: '2024-10-07', location: '大阪 · 日本', title: '夜色与最后一班车', category: '收尾', summary: '用一顿热气腾腾的章鱼烧，为旅程画上句号。', content: '最后一晚去了通天阁附近，街灯刚刚亮起。记录下这次旅途的花费和最想再来的三个地方。', expense: 680, cover: 'https://images.unsplash.com/photo-1590559899731-a382839e5549?auto=format&fit=crop&w=900&q=85' },
+type Entry = {
+  id: number
+  year: string
+  date: string
+  category: string
+  title: string
+  place: string
+  summary: string
+  body: string
+  tags: string
+  image: string
+  metric: string
+}
+
+const seedProfile: Profile = {
+  name: 'LI HAO',
+  initials: 'LH',
+  role: '风光记录者 · 户外爱好者',
+  tagline: '在山野、风里和光影之间，保持好奇。',
+  bio: '我喜欢把自己放进真实的环境里：走一段没有路牌的山路，沿着江岸骑到天黑，或者在一场雪里等一束刚好的光。这里是我的个人索引，记录经历，也分享正在发生的事。',
+  location: '上海 · 中国',
+  availability: '开放合作',
+  avatar: 'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1200&q=85',
+  email: 'hello@example.com',
+  website: 'fieldnote.example',
+  interests: '徒步, 骑行, 摄影, 钓鱼, 滑雪',
+}
+
+const seedEntries: Entry[] = [
+  { id: 1, year: '2025', date: '2025.02 — 至今', category: 'CURRENTLY', title: '把生活搬到户外', place: '中国 · 西南线', summary: '一边工作，一边把更多时间还给山、河流和清晨。', body: '正在整理一份关于西南山地的长期影像计划。它不追求打卡，而是记录人在自然里如何改变速度、距离和判断。', tags: '长期项目, 影像计划', image: 'https://images.unsplash.com/photo-1464278533981-50106e6176b1?auto=format&fit=crop&w=1200&q=85', metric: '01 / ongoing' },
+  { id: 2, year: '2024', date: '2024.09 — 2024.11', category: 'PROJECT', title: '沿江骑行 312 公里', place: '浙江 · 钱塘江', summary: '用三天时间，从潮汐、桥和路边小店重新认识一条江。', body: '路线从上游开始，尽量避开快速路。每天只设一个目的地，剩下的时间留给天气、偶遇和拍摄。', tags: '骑行, 纪实, 312 km', image: 'https://images.unsplash.com/photo-1502744688674-c619d1586c9e?auto=format&fit=crop&w=1200&q=85', metric: '312 km / 03 days' },
+  { id: 3, year: '2023', date: '2023.12 — 2024.01', category: 'SERIES', title: '雪线之上的 17 个清晨', place: '北海道 · 日本', summary: '在雪落下来之前，记录山脊上的蓝色时刻。', body: '这一组照片拍摄于清晨五点到七点之间。低温、风向和能见度共同决定了每一张照片的构图。', tags: '摄影, 雪山, 17 frames', image: 'https://images.unsplash.com/photo-1486911278844-a81c5267e227?auto=format&fit=crop&w=1200&q=85', metric: '17 frames / film' },
+  { id: 4, year: '2022', date: '2022.05 — 2022.10', category: 'LEARNING', title: '开始认真观察世界', place: '上海 · 日常半径', summary: '从一台相机和一张空白地图开始，建立自己的观察习惯。', body: '摄影不是目的，注意力才是。那一年我开始记录每天经过的街道、光线和陌生人的动作。', tags: '摄影, 观察, 练习', image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=85', metric: '100+ walks' },
 ]
 
-const memories = ref<Memory[]>([])
-const mode = ref<'public' | 'admin'>('public')
-const detail = ref<Memory | null>(null)
+const profile = ref<Profile>({ ...seedProfile })
+const entries = ref<Entry[]>([])
+const activeView = ref<'public' | 'admin'>('public')
+const activeTab = ref<'profile' | 'timeline' | 'appearance'>('profile')
+const selectedEntry = ref<Entry | null>(null)
 const editingId = ref<number | null>(null)
-const form = ref({ date: '', location: '', title: '', category: '灵感', summary: '', content: '', expense: 0, cover: '' })
-const uploadedNames = ref<string[]>([])
-const activeAdminTab = ref('entries')
+const mobileOpen = ref(false)
+const profileForm = ref<Profile>({ ...seedProfile })
+const entryForm = ref<Entry>({ ...seedEntries[0], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' })
 
 onMounted(() => {
-  const saved = localStorage.getItem('journey-chronicle-memories')
-  memories.value = saved ? JSON.parse(saved) : seedMemories
+  profile.value = JSON.parse(localStorage.getItem('fieldnote-profile') || JSON.stringify(seedProfile))
+  entries.value = JSON.parse(localStorage.getItem('fieldnote-entries') || JSON.stringify(seedEntries))
+  profileForm.value = { ...profile.value }
 })
 
-const totalExpense = computed(() => memories.value.reduce((sum, item) => sum + Number(item.expense || 0), 0))
-const sortedMemories = computed(() => [...memories.value].sort((a, b) => a.date.localeCompare(b.date)))
+const interestList = computed(() => profile.value.interests.split(',').map(item => item.trim()).filter(Boolean))
+const sortedEntries = computed(() => [...entries.value].sort((a, b) => b.year.localeCompare(a.year)))
+const featuredEntries = computed(() => sortedEntries.value.slice(0, 3))
 
-function persist() { localStorage.setItem('journey-chronicle-memories', JSON.stringify(memories.value)) }
-function resetForm() { form.value = { date: '', location: '', title: '', category: '灵感', summary: '', content: '', expense: 0, cover: '' }; uploadedNames.value = []; editingId.value = null }
-function editMemory(item: Memory) { editingId.value = item.id; form.value = { ...item }; activeAdminTab.value = 'entries'; window.scrollTo({ top: 0, behavior: 'smooth' }) }
-function deleteMemory(id: number) { memories.value = memories.value.filter(item => item.id !== id); persist() }
-function saveMemory() {
-  if (!form.value.title || !form.value.date || !form.value.location) return
-  const item: Memory = { ...form.value, id: editingId.value ?? Date.now(), expense: Number(form.value.expense || 0), cover: form.value.cover || seedMemories[0].cover }
-  if (editingId.value) memories.value = memories.value.map(existing => existing.id === editingId.value ? item : existing)
-  else memories.value = [item, ...memories.value]
-  persist(); resetForm()
+function saveProfile() {
+  profile.value = { ...profileForm.value }
+  localStorage.setItem('fieldnote-profile', JSON.stringify(profile.value))
 }
-function handleFiles(event: Event) {
-  const files = Array.from((event.target as HTMLInputElement).files ?? [])
-  uploadedNames.value = files.map(file => file.name)
-  const firstImage = files.find(file => file.type.startsWith('image/'))
-  if (firstImage) form.value.cover = URL.createObjectURL(firstImage)
+function resetEntry() {
+  editingId.value = null
+  entryForm.value = { ...seedEntries[0], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' }
 }
-function scrollToTimeline() { document.getElementById('timeline')?.scrollIntoView({ behavior: 'smooth' }) }
+function editEntry(item: Entry) { editingId.value = item.id; entryForm.value = { ...item }; activeTab.value = 'timeline'; window.scrollTo({ top: 0, behavior: 'smooth' }) }
+function saveEntry() {
+  if (!entryForm.value.title || !entryForm.value.year || !entryForm.value.summary) return
+  const next = { ...entryForm.value, id: editingId.value || Date.now(), image: entryForm.value.image || seedEntries[0].image }
+  entries.value = editingId.value ? entries.value.map(item => item.id === editingId.value ? next : item) : [next, ...entries.value]
+  localStorage.setItem('fieldnote-entries', JSON.stringify(entries.value)); resetEntry()
+}
+function deleteEntry(id: number) {
+  entries.value = entries.value.filter(item => item.id !== id)
+  localStorage.setItem('fieldnote-entries', JSON.stringify(entries.value))
+}
+function openPublic() { activeView.value = 'public'; mobileOpen.value = false }
+function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = false; requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })) }
 </script>
 
 <template>
-  <div class="shell">
-    <header class="topbar">
-      <div class="brand"><span class="brand-mark"><Compass :size="18" /></span><span>旅途编年册</span></div>
-      <nav class="topnav" aria-label="主导航">
-        <button class="nav-btn" :class="{ active: mode === 'public' }" @click="mode = 'public'"><BookOpen :size="16" /><span class="nav-label">旅程展示</span></button>
-        <button class="nav-btn admin-pill" :class="{ active: mode === 'admin' }" @click="mode = 'admin'"><LayoutDashboard :size="16" /><span class="nav-label">内容后台</span></button>
-      </nav>
+  <div class="app-shell">
+    <header class="site-header">
+      <button class="wordmark" @click="openPublic"><span class="wordmark-dot"></span><span>FIELDNOTE</span><small>/ PERSONAL INDEX</small></button>
+      <nav class="desktop-nav"><button @click="scrollTo('about')">关于我</button><button @click="scrollTo('timeline')">履历时间线</button><button @click="scrollTo('work')">作品切片</button><button class="edit-link" @click="activeView = 'admin'"><Edit3 :size="14" /> 编辑主页</button></nav>
+      <button class="icon-button mobile-menu" title="打开菜单" @click="mobileOpen = !mobileOpen"><Menu :size="18" /></button>
+      <div v-if="mobileOpen" class="mobile-nav"><button @click="scrollTo('about')">关于我</button><button @click="scrollTo('timeline')">履历时间线</button><button @click="scrollTo('work')">作品切片</button><button @click="activeView = 'admin'; mobileOpen = false">编辑主页</button></div>
     </header>
 
-    <main v-if="mode === 'public'" class="main">
-      <section class="hero">
-        <div>
-          <p class="eyebrow">A living travel journal</p>
-          <h1>把走过的地方，<br />变成一段可以回看的故事。</h1>
-          <p class="lede">用时间节点收集目的地、行程、攻略和花费。让每一次出发都被好好记录，也让下一次旅途更有方向。</p>
-          <div class="hero-actions"><button class="btn" @click="scrollToTimeline">查看旅程 <ArrowRight :size="16" /></button><button class="btn secondary" @click="mode = 'admin'"><LayoutDashboard :size="15" /> 管理内容</button></div>
-        </div>
-        <div class="hero-art"><div class="hero-note"><strong>关西，7 日漫游</strong><span>京都 · 奈良 · 大阪 &nbsp; / &nbsp; 2024.10</span></div></div>
+    <main v-if="activeView === 'public'" class="public-page">
+      <section class="hero-section page-width">
+        <div class="hero-copy reveal"><p class="overline"><span class="live-dot"></span> {{ profile.availability }} · {{ profile.location }}</p><h1>{{ profile.name }}<span class="stroke-mark">.</span></h1><p class="hero-role">{{ profile.role }}</p><p class="hero-tagline">{{ profile.tagline }}</p><div class="hero-actions"><button class="primary-btn" @click="scrollTo('timeline')">从时间线认识我 <ArrowDownRight :size="17" /></button><a class="text-link" :href="`mailto:${profile.email}`">联系我 <ArrowRight :size="15" /></a></div></div>
+        <div class="hero-visual reveal delay-1"><div class="hero-image-wrap"><img :src="profile.avatar" :alt="profile.name" /><div class="image-caption"><span>01 / FIELD NOTES</span><span>LOOKING CLOSER</span></div></div><div class="hero-stamp"><Compass :size="22" /><span>STAY<br />CURIOUS</span></div></div>
       </section>
 
-      <section class="stats" aria-label="旅程概览">
-        <div class="stat"><MapPin class="stat-icon" :size="20" /><span class="stat-label">记录地点</span><strong class="stat-value">03</strong></div>
-        <div class="stat"><CalendarDays class="stat-icon" :size="20" /><span class="stat-label">时间节点</span><strong class="stat-value">{{ String(memories.length).padStart(2, '0') }}</strong></div>
-        <div class="stat"><Wallet class="stat-icon" :size="20" /><span class="stat-label">旅程花费</span><strong class="stat-value">¥{{ totalExpense.toLocaleString() }}</strong></div>
-        <div class="stat"><ImageIcon class="stat-icon" :size="20" /><span class="stat-label">图像记录</span><strong class="stat-value">12</strong></div>
-      </section>
+      <div class="ticker"><div class="ticker-track"><span v-for="(interest, index) in [...interestList, ...interestList]" :key="`${interest}-${index}`">{{ interest }} <i>✦</i></span></div></div>
 
-      <section class="progress-wrap"><div class="section-head"><div><p class="eyebrow">Trip progress</p><h2>这段旅程走到哪里了？</h2></div><strong>64%</strong></div><div class="progress-line"><span></span></div><div class="progress-meta"><span>2024.10.03 · 京都</span><span>2024.10.09 · 回到日常</span></div></section>
+      <section id="about" class="about-section page-width section-grid"><div class="section-index">01 <span>ABOUT</span></div><div class="about-content"><h2>一个正在持续更新的人。</h2><p class="about-lede">{{ profile.bio }}</p><div class="about-facts"><div><small>BASE</small><strong>{{ profile.location }}</strong></div><div><small>FOCUS</small><strong>{{ interestList.slice(0, 3).join(' · ') }}</strong></div><div><small>OPEN TO</small><strong>{{ profile.availability }}</strong></div></div><div class="interest-list"><span v-for="(interest, index) in interestList" :key="interest" class="interest-chip" :class="`tone-${index % 4}`">{{ interest }}</span></div></div></section>
 
-      <section id="timeline"><div class="section-head"><div><p class="eyebrow">The timeline</p><h2>沿着时间，重新出发</h2></div><p>{{ memories.length }} 个被保存的瞬间</p></div>
-        <div class="timeline">
-          <article v-for="item in sortedMemories" :key="item.id" class="timeline-item"><span class="timeline-dot"></span><time class="timeline-date">{{ item.date.replaceAll('-', '.') }}</time><div class="memory"><img class="memory-cover" :src="item.cover" :alt="item.title" /><div class="memory-body"><span class="tag"><Sparkles :size="12" /> {{ item.category }}</span><h3>{{ item.title }}</h3><p>{{ item.summary }}</p><button class="text-btn" @click="detail = item">阅读这一站 <ChevronRight :size="14" /></button></div></div></article>
-        </div>
-      </section>
+      <section id="timeline" class="timeline-section page-width"><div class="section-grid section-heading"><div class="section-index">02 <span>THE TRACE</span></div><div><h2>经历不是履历表，<br /><em>是你走过的路径。</em></h2><p>每一个节点都可以展开，看到当时的背景、选择和留下的作品。</p></div></div><div class="trace-list"><article v-for="item in sortedEntries" :key="item.id" class="trace-item" @click="selectedEntry = item"><div class="trace-year">{{ item.year }}</div><div class="trace-marker"><span></span></div><div class="trace-main"><div class="trace-meta"><span>{{ item.category }}</span><time>{{ item.date }}</time></div><h3>{{ item.title }}</h3><p class="trace-place"><MapPin :size="13" /> {{ item.place }}</p><p class="trace-summary">{{ item.summary }}</p><div class="trace-bottom"><div class="mini-tags"><span v-for="tag in item.tags.split(',').slice(0, 3)" :key="tag">{{ tag.trim() }}</span></div><button class="round-arrow" title="查看详情"><ArrowUpRight :size="17" /></button></div></div><img class="trace-image" :src="item.image" :alt="item.title" /></article></div></section>
+
+      <section id="work" class="work-section page-width"><div class="section-grid section-heading"><div class="section-index">03 <span>SELECTED WORK</span></div><div><h2>留下一些可以<br /><em>被看见的东西。</em></h2><p>路上的照片、项目和一些仍然在生长的想法。</p></div></div><div class="work-grid"><article v-for="(item, index) in featuredEntries" :key="item.id" class="work-card" :class="{ featured: index === 0 }" @click="selectedEntry = item"><img :src="item.image" :alt="item.title" /><div class="work-overlay"><span>{{ item.category }}</span><h3>{{ item.title }}</h3><p>{{ item.metric }}</p></div><div class="work-corner"><ExternalLink :size="15" /></div></article></div></section>
+
+      <section class="contact-section page-width"><div><p class="overline">LET'S MAKE SOMETHING REAL</p><h2>有一个故事，<br />正在等着被记录。</h2></div><a class="contact-button" :href="`mailto:${profile.email}`"><Mail :size="18" /> {{ profile.email }} <ArrowUpRight :size="18" /></a></section>
     </main>
 
-    <main v-else class="main">
-      <div class="admin-layout">
-        <aside class="admin-sidebar"><h2>内容后台</h2><button class="side-link" :class="{ active: activeAdminTab === 'entries' }" @click="activeAdminTab = 'entries'"><FileText :size="16" /> 时间节点</button><button class="side-link" :class="{ active: activeAdminTab === 'media' }" @click="activeAdminTab = 'media'"><ImageIcon :size="16" /> 媒体资料</button><button class="side-link" :class="{ active: activeAdminTab === 'settings' }" @click="activeAdminTab = 'settings'"><Compass :size="16" /> 旅程设置</button></aside>
-        <section class="admin-content">
-          <div class="admin-heading"><div><h1>记录你的旅程</h1><p>所有内容保存于当前浏览器，可随时编辑和整理。</p></div><button class="btn accent" @click="resetForm"><Plus :size="16" /> 新增节点</button></div>
-          <template v-if="activeAdminTab === 'entries'">
-            <div class="admin-card"><div class="admin-card-head"><h3>{{ editingId ? '编辑时间节点' : '新增时间节点' }}</h3><button v-if="editingId" class="icon-btn" title="取消编辑" @click="resetForm"><X :size="16" /></button></div><div class="form-grid"><div class="field"><label>发生日期</label><input v-model="form.date" type="date" /></div><div class="field"><label>目的地</label><input v-model="form.location" placeholder="例如：京都 · 日本" /></div><div class="field"><label>节点标题</label><input v-model="form.title" placeholder="给这一站一个名字" /></div><div class="field"><label>内容分类</label><select v-model="form.category"><option>灵感</option><option>漫游</option><option>攻略</option><option>收尾</option></select></div><div class="field full"><label>一句话摘要</label><input v-model="form.summary" placeholder="在列表中展示的简短描述" /></div><div class="field full"><label>详细记录</label><textarea v-model="form.content" placeholder="写下当天的行程、攻略或心情..."></textarea></div><div class="field"><label>本节点花费（元）</label><input v-model="form.expense" type="number" min="0" /></div><div class="field"><label>封面图片 URL（可选）</label><input v-model="form.cover" placeholder="https://..." /></div><div class="field full"><label>上传图片或视频</label><div class="upload-box"><Upload :size="18" /><span>{{ uploadedNames.length ? uploadedNames.join('、') : '选择本地媒体文件，生成预览' }}</span><input type="file" accept="image/*,video/*" multiple @change="handleFiles" /></div></div></div><div class="form-actions"><button class="btn secondary" @click="resetForm">清空</button><button class="btn" :disabled="!form.title || !form.date || !form.location" @click="saveMemory"><Check :size="16" /> 保存节点</button></div></div>
-            <div class="admin-card"><div class="admin-card-head"><h3>已记录的节点</h3><span class="tag">{{ memories.length }} 条记录</span></div><div v-if="memories.length"><div v-for="item in memories" :key="item.id" class="record-row"><img class="record-thumb" :src="item.cover" :alt="item.title" /><div class="record-meta"><strong>{{ item.title }}</strong><span>{{ item.date.replaceAll('-', '.') }} · {{ item.location }} · ¥{{ item.expense }}</span></div><div class="row-actions"><button class="icon-btn" title="编辑" @click="editMemory(item)"><Pencil :size="15" /></button><button class="icon-btn danger" title="删除" @click="deleteMemory(item.id)"><Trash2 :size="15" /></button></div></div></div><div v-else class="empty">还没有节点，先记录第一站吧。</div></div>
-          </template>
-          <template v-else-if="activeAdminTab === 'media'"><div class="admin-card"><div class="admin-card-head"><h3>媒体资料</h3></div><div class="empty"><Video :size="28" /><p>媒体会跟随时间节点保存。进入“时间节点”后即可上传图片或视频。</p></div></div></template>
-          <template v-else><div class="admin-card"><div class="admin-card-head"><h3>旅程设置</h3></div><div class="form-grid"><div class="field"><label>旅程名称</label><input value="关西，7 日漫游" /></div><div class="field"><label>出发日期</label><input value="2024-10-03" type="date" /></div><div class="field full"><label>公开简介</label><textarea value="把走过的地方，变成一段可以回看的故事。" /></div></div><div class="form-actions"><button class="btn"><Check :size="16" /> 保存设置</button></div></div></template>
-        </section>
-      </div>
+    <main v-else class="admin-page page-width"><div class="admin-top"><div><p class="overline">FIELDNOTE / EDITOR</p><h1>编辑你的个人索引</h1><p>这里的每一处修改都会同步到公开主页。</p></div><button class="text-link" @click="openPublic">返回公开主页 <ExternalLink :size="15" /></button></div><div class="admin-tabs"><button :class="{ active: activeTab === 'profile' }" @click="activeTab = 'profile'">个人资料</button><button :class="{ active: activeTab === 'timeline' }" @click="activeTab = 'timeline'">履历节点 <span>{{ entries.length }}</span></button><button :class="{ active: activeTab === 'appearance' }" @click="activeTab = 'appearance'">外观设置</button></div>
+      <section v-if="activeTab === 'profile'" class="editor-panel"><div class="panel-title"><div><span class="panel-kicker">PROFILE / 01</span><h2>先让别人认识你</h2></div><button class="primary-btn" @click="saveProfile"><Save :size="16" /> 保存资料</button></div><div class="editor-grid"><label>你的名字<input v-model="profileForm.name" /></label><label>头像字母<input v-model="profileForm.initials" maxlength="3" /></label><label>身份 / 角色<input v-model="profileForm.role" /></label><label>所在位置<input v-model="profileForm.location" /></label><label class="wide">一句话介绍<textarea v-model="profileForm.tagline" rows="2" /></label><label class="wide">个人简介<textarea v-model="profileForm.bio" rows="5" /></label><label>对外状态<input v-model="profileForm.availability" /></label><label>联系邮箱<input v-model="profileForm.email" type="email" /></label><label class="wide">头像图片地址<input v-model="profileForm.avatar" /></label><label class="wide">兴趣标签（用逗号分隔）<input v-model="profileForm.interests" placeholder="徒步, 摄影, 滑雪" /></label></div><div class="editor-preview"><span class="preview-label">LIVE PREVIEW</span><strong>{{ profileForm.name || '你的名字' }}</strong><span>{{ profileForm.role || '你的身份 / 角色' }}</span></div></section>
+      <section v-else-if="activeTab === 'timeline'" class="editor-panel"><div class="panel-title"><div><span class="panel-kicker">TRACE / 02</span><h2>{{ editingId ? '编辑这个节点' : '添加一个新节点' }}</h2></div><button v-if="editingId" class="icon-button" title="取消编辑" @click="resetEntry"><X :size="17" /></button></div><div class="editor-grid"><label>年份<input v-model="entryForm.year" placeholder="2025" /></label><label>节点日期<input v-model="entryForm.date" placeholder="2025.02 — 至今" /></label><label>节点类型<select v-model="entryForm.category"><option>PROJECT</option><option>CURRENTLY</option><option>SERIES</option><option>LEARNING</option><option>LIFE</option></select></label><label>地点<input v-model="entryForm.place" placeholder="中国 · 西南线" /></label><label class="wide">标题<input v-model="entryForm.title" placeholder="这个节点发生了什么？" /></label><label class="wide">一句话摘要<textarea v-model="entryForm.summary" rows="2" /></label><label class="wide">详细介绍<textarea v-model="entryForm.body" rows="5" /></label><label class="wide">标签（用逗号分隔）<input v-model="entryForm.tags" placeholder="摄影, 纪实, 长期项目" /></label><label class="wide">图片地址<input v-model="entryForm.image" placeholder="https://..." /></label><label>数据标记<input v-model="entryForm.metric" placeholder="312 km / 03 days" /></label></div><div class="editor-actions"><button class="ghost-btn" @click="resetEntry">清空</button><button class="primary-btn" :disabled="!entryForm.title || !entryForm.year || !entryForm.summary" @click="saveEntry"><Check :size="16" /> {{ editingId ? '保存修改' : '添加节点' }}</button></div><div class="entry-manager"><div class="manager-head"><span>已有节点</span><small>点击编辑或删除</small></div><div v-for="item in sortedEntries" :key="item.id" class="manager-row"><div><strong>{{ item.year }} / {{ item.title }}</strong><span>{{ item.category }} · {{ item.place }}</span></div><div><button class="icon-button" title="编辑节点" @click="editEntry(item)"><Edit3 :size="15" /></button><button class="icon-button danger" title="删除节点" @click="deleteEntry(item.id)"><Trash2 :size="15" /></button></div></div></div></section>
+      <section v-else class="editor-panel"><div class="panel-title"><div><span class="panel-kicker">MOOD / 03</span><h2>选择你的现场</h2></div></div><div class="appearance-options"><button class="appearance-choice selected"><span class="swatch ink"></span><strong>Ink & Paper</strong><small>当前主题 · 深墨黑 / 米白 / 荧光绿</small></button><button class="appearance-choice"><span class="swatch coral"></span><strong>Coral Signal</strong><small>即将支持自定义色彩</small></button><button class="appearance-choice"><span class="swatch cobalt"></span><strong>Cobalt Night</strong><small>即将支持深色模式</small></button></div><div class="motion-note"><Zap :size="17" /><span>页面已启用轻量动效：滚动出现、图片悬停和时间线交互。动效不会影响阅读。</span></div></section>
     </main>
 
-    <div v-if="detail" class="drawer-backdrop" @click.self="detail = null"><article class="drawer"><div class="drawer-top"><span class="detail-kicker">Journey note</span><button class="icon-btn" title="关闭详情" @click="detail = null"><X :size="17" /></button></div><img class="detail-cover" :src="detail.cover" :alt="detail.title" /><p class="detail-kicker">{{ detail.date.replaceAll('-', '.') }} · {{ detail.location }}</p><h2>{{ detail.title }}</h2><p class="detail-copy">{{ detail.content }}</p><div class="detail-facts"><div class="fact"><small>本节点花费</small><strong>¥{{ detail.expense.toLocaleString() }}</strong></div><div class="fact"><small>内容分类</small><strong>{{ detail.category }}</strong></div></div><button class="btn secondary" @click="detail = null">返回时间轴 <ArrowRight :size="15" /></button></article></div>
+    <footer class="site-footer page-width"><span>© {{ new Date().getFullYear() }} {{ profile.name }} / FIELDNOTE</span><span>MADE TO BE SHARED <Sparkles :size="14" /></span></footer>
+
+    <div v-if="selectedEntry" class="detail-backdrop" @click.self="selectedEntry = null"><article class="detail-modal"><button class="modal-close icon-button" title="关闭详情" @click="selectedEntry = null"><X :size="17" /></button><img :src="selectedEntry.image" :alt="selectedEntry.title" /><div class="modal-content"><div class="trace-meta"><span>{{ selectedEntry.category }}</span><time>{{ selectedEntry.date }}</time></div><h2>{{ selectedEntry.title }}</h2><p class="trace-place"><MapPin :size="13" /> {{ selectedEntry.place }}</p><p class="modal-body">{{ selectedEntry.body }}</p><div class="mini-tags"><span v-for="tag in selectedEntry.tags.split(',')" :key="tag">{{ tag.trim() }}</span></div><div class="modal-metric">{{ selectedEntry.metric }}</div></div></article></div>
   </div>
 </template>
