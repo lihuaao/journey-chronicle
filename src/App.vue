@@ -5,6 +5,9 @@ import {
   ExternalLink, Mail, MapPin, Menu, Save, Sparkles, Trash2, X, Zap,
 } from 'lucide-vue-next'
 
+type ThemeKey = 'signal' | 'coral' | 'cobalt'
+type EntryCategory = 'PROJECT' | 'WORK' | 'LEARNING' | 'LIFE' | 'NOW'
+
 type Profile = {
   name: string
   initials: string
@@ -17,13 +20,14 @@ type Profile = {
   email: string
   website: string
   interests: string
+  theme: ThemeKey
 }
 
 type Entry = {
   id: number
   year: string
   date: string
-  category: string
+  category: EntryCategory
   title: string
   place: string
   summary: string
@@ -32,6 +36,14 @@ type Entry = {
   image: string
   metric: string
 }
+
+const categoryOptions: EntryCategory[] = ['PROJECT', 'WORK', 'LEARNING', 'LIFE', 'NOW']
+const publicCategories = ['ALL', ...categoryOptions] as const
+const themeOptions: Array<{ id: ThemeKey; label: string; note: string }> = [
+  { id: 'signal', label: 'Night Signal', note: '深夜蓝底 · 薄荷高亮 · 当前主题' },
+  { id: 'coral', label: 'Coral Current', note: '暖灰底 · 珊瑚重点 · 更有温度' },
+  { id: 'cobalt', label: 'Cobalt Field', note: '冷白底 · 钴蓝重点 · 更偏作品集' },
+]
 
 const seedProfile: Profile = {
   name: 'LI HAO',
@@ -45,19 +57,22 @@ const seedProfile: Profile = {
   email: 'hello@example.com',
   website: 'fieldnote.example',
   interests: '徒步, 骑行, 摄影, 钓鱼, 滑雪',
+  theme: 'signal',
 }
 
 const seedEntries: Entry[] = [
-  { id: 1, year: '2025', date: '2025.02 — 至今', category: 'CURRENTLY', title: '把生活搬到户外', place: '中国 · 西南线', summary: '一边工作，一边把更多时间还给山、河流和清晨。', body: '正在整理一份关于西南山地的长期影像计划。它不追求打卡，而是记录人在自然里如何改变速度、距离和判断。', tags: '长期项目, 影像计划', image: 'https://images.unsplash.com/photo-1464278533981-50106e6176b1?auto=format&fit=crop&w=1200&q=85', metric: '01 / ongoing' },
+  { id: 1, year: '2025', date: '2025.02 — 至今', category: 'NOW', title: '把生活搬到户外', place: '中国 · 西南线', summary: '一边工作，一边把更多时间还给山、河流和清晨。', body: '正在整理一份关于西南山地的长期影像计划。它不追求打卡，而是记录人在自然里如何改变速度、距离和判断。', tags: '长期项目, 影像计划', image: 'https://images.unsplash.com/photo-1464278533981-50106e6176b1?auto=format&fit=crop&w=1200&q=85', metric: '01 / ongoing' },
   { id: 2, year: '2024', date: '2024.09 — 2024.11', category: 'PROJECT', title: '沿江骑行 312 公里', place: '浙江 · 钱塘江', summary: '用三天时间，从潮汐、桥和路边小店重新认识一条江。', body: '路线从上游开始，尽量避开快速路。每天只设一个目的地，剩下的时间留给天气、偶遇和拍摄。', tags: '骑行, 纪实, 312 km', image: 'https://images.unsplash.com/photo-1502744688674-c619d1586c9e?auto=format&fit=crop&w=1200&q=85', metric: '312 km / 03 days' },
-  { id: 3, year: '2023', date: '2023.12 — 2024.01', category: 'SERIES', title: '雪线之上的 17 个清晨', place: '北海道 · 日本', summary: '在雪落下来之前，记录山脊上的蓝色时刻。', body: '这一组照片拍摄于清晨五点到七点之间。低温、风向和能见度共同决定了每一张照片的构图。', tags: '摄影, 雪山, 17 frames', image: 'https://images.unsplash.com/photo-1486911278844-a81c5267e227?auto=format&fit=crop&w=1200&q=85', metric: '17 frames / film' },
+  { id: 3, year: '2023', date: '2023.12 — 2024.01', category: 'WORK', title: '雪线之上的 17 个清晨', place: '北海道 · 日本', summary: '在雪落下来之前，记录山脊上的蓝色时刻。', body: '这一组照片拍摄于清晨五点到七点之间。低温、风向和能见度共同决定了每一张照片的构图。', tags: '摄影, 雪山, 17 frames', image: 'https://images.unsplash.com/photo-1486911278844-a81c5267e227?auto=format&fit=crop&w=1200&q=85', metric: '17 frames / film' },
   { id: 4, year: '2022', date: '2022.05 — 2022.10', category: 'LEARNING', title: '开始认真观察世界', place: '上海 · 日常半径', summary: '从一台相机和一张空白地图开始，建立自己的观察习惯。', body: '摄影不是目的，注意力才是。那一年我开始记录每天经过的街道、光线和陌生人的动作。', tags: '摄影, 观察, 练习', image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=85', metric: '100+ walks' },
+  { id: 5, year: '2021', date: '2021.04 — 2021.09', category: 'LIFE', title: '在城市里找到水面', place: '上海 · 苏州河', summary: '把日常散步变成一份关于城市边缘的生活档案。', body: '没有明确的项目目标，只是每周沿着河走一段，拍下桥下的光、钓鱼的人和慢慢变化的岸线。', tags: '生活, 观察, 城市', image: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1200&q=85', metric: '42 walks' },
 ]
 
 const profile = ref<Profile>({ ...seedProfile })
 const entries = ref<Entry[]>([])
 const activeView = ref<'public' | 'admin'>('public')
 const activeTab = ref<'profile' | 'timeline' | 'appearance'>('profile')
+const activeCategory = ref<'ALL' | EntryCategory>('ALL')
 const selectedEntry = ref<Entry | null>(null)
 const editingId = ref<number | null>(null)
 const mobileOpen = ref(false)
@@ -65,19 +80,39 @@ const profileForm = ref<Profile>({ ...seedProfile })
 const entryForm = ref<Entry>({ ...seedEntries[0], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' })
 
 onMounted(() => {
-  profile.value = JSON.parse(localStorage.getItem('fieldnote-profile') || JSON.stringify(seedProfile))
-  entries.value = JSON.parse(localStorage.getItem('fieldnote-entries') || JSON.stringify(seedEntries))
+  const storedProfile = JSON.parse(localStorage.getItem('fieldnote-profile') || 'null') as Partial<Profile> | null
+  const storedEntries = JSON.parse(localStorage.getItem('fieldnote-entries') || 'null') as Array<Partial<Entry>> | null
+  profile.value = { ...seedProfile, ...storedProfile, theme: storedProfile?.theme ?? seedProfile.theme }
+  entries.value = storedEntries ? storedEntries.map(normalizeEntry) : seedEntries
   profileForm.value = { ...profile.value }
 })
 
 const interestList = computed(() => profile.value.interests.split(',').map(item => item.trim()).filter(Boolean))
 const sortedEntries = computed(() => [...entries.value].sort((a, b) => b.year.localeCompare(a.year)))
-const featuredEntries = computed(() => sortedEntries.value.slice(0, 3))
+const featuredEntries = computed(() => {
+  const source = activeCategory.value === 'ALL' ? sortedEntries.value : sortedEntries.value.filter(item => item.category === activeCategory.value)
+  return source.slice(0, 4)
+})
+
+function normalizeCategory(value: string | undefined): EntryCategory {
+  if (value === 'CURRENTLY') return 'NOW'
+  if (value === 'SERIES') return 'WORK'
+  return categoryOptions.includes(value as EntryCategory) ? value as EntryCategory : 'PROJECT'
+}
+function normalizeEntry(item: Partial<Entry>): Entry {
+  return { ...seedEntries[0], ...item, id: Number(item.id || Date.now()), category: normalizeCategory(item.category) }
+}
 
 function saveProfile() {
   profile.value = { ...profileForm.value }
   localStorage.setItem('fieldnote-profile', JSON.stringify(profile.value))
 }
+function setTheme(theme: ThemeKey) {
+  profileForm.value.theme = theme
+  profile.value.theme = theme
+  localStorage.setItem('fieldnote-profile', JSON.stringify(profile.value))
+}
+function setActiveCategory(category: 'ALL' | EntryCategory) { activeCategory.value = category }
 function resetEntry() {
   editingId.value = null
   entryForm.value = { ...seedEntries[0], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' }
@@ -85,7 +120,7 @@ function resetEntry() {
 function editEntry(item: Entry) { editingId.value = item.id; entryForm.value = { ...item }; activeTab.value = 'timeline'; window.scrollTo({ top: 0, behavior: 'smooth' }) }
 function saveEntry() {
   if (!entryForm.value.title || !entryForm.value.year || !entryForm.value.summary) return
-  const next = { ...entryForm.value, id: editingId.value || Date.now(), image: entryForm.value.image || seedEntries[0].image }
+  const next = normalizeEntry({ ...entryForm.value, id: editingId.value || Date.now(), image: entryForm.value.image || seedEntries[0].image })
   entries.value = editingId.value ? entries.value.map(item => item.id === editingId.value ? next : item) : [next, ...entries.value]
   localStorage.setItem('fieldnote-entries', JSON.stringify(entries.value)); resetEntry()
 }
@@ -98,7 +133,7 @@ function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = 
 </script>
 
 <template>
-  <div class="app-shell">
+  <div class="app-shell" :class="`theme-${profile.theme}`">
     <header class="site-header">
       <button class="wordmark" @click="openPublic"><span class="wordmark-dot"></span><span>FIELDNOTE</span><small>/ PERSONAL INDEX</small></button>
       <nav class="desktop-nav"><button @click="scrollTo('about')">关于我</button><button @click="scrollTo('timeline')">履历时间线</button><button @click="scrollTo('work')">作品切片</button><button class="edit-link" @click="activeView = 'admin'"><Edit3 :size="14" /> 编辑主页</button></nav>
@@ -118,15 +153,15 @@ function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = 
 
       <section id="timeline" class="timeline-section page-width"><div class="section-grid section-heading"><div class="section-index">02 <span>THE TRACE</span></div><div><h2>经历不是履历表，<br /><em>是你走过的路径。</em></h2><p>每一个节点都可以展开，看到当时的背景、选择和留下的作品。</p></div></div><div class="trace-list"><article v-for="item in sortedEntries" :key="item.id" class="trace-item" @click="selectedEntry = item"><div class="trace-year">{{ item.year }}</div><div class="trace-marker"><span></span></div><div class="trace-main"><div class="trace-meta"><span>{{ item.category }}</span><time>{{ item.date }}</time></div><h3>{{ item.title }}</h3><p class="trace-place"><MapPin :size="13" /> {{ item.place }}</p><p class="trace-summary">{{ item.summary }}</p><div class="trace-bottom"><div class="mini-tags"><span v-for="tag in item.tags.split(',').slice(0, 3)" :key="tag">{{ tag.trim() }}</span></div><button class="round-arrow" title="查看详情"><ArrowUpRight :size="17" /></button></div></div><img class="trace-image" :src="item.image" :alt="item.title" /></article></div></section>
 
-      <section id="work" class="work-section page-width"><div class="section-grid section-heading"><div class="section-index">03 <span>SELECTED WORK</span></div><div><h2>留下一些可以<br /><em>被看见的东西。</em></h2><p>路上的照片、项目和一些仍然在生长的想法。</p></div></div><div class="work-grid"><article v-for="(item, index) in featuredEntries" :key="item.id" class="work-card" :class="{ featured: index === 0 }" @click="selectedEntry = item"><img :src="item.image" :alt="item.title" /><div class="work-overlay"><span>{{ item.category }}</span><h3>{{ item.title }}</h3><p>{{ item.metric }}</p></div><div class="work-corner"><ExternalLink :size="15" /></div></article></div></section>
+      <section id="work" class="work-section page-width"><div class="section-grid section-heading"><div class="section-index">03 <span>SELECTED WORK</span></div><div><h2>把经历变成<br /><em>可以被看见的作品。</em></h2><p>按内容类型浏览项目、工作、学习、生活和正在发生的事。</p></div></div><div class="work-filters"><button v-for="category in publicCategories" :key="category" :class="{ active: activeCategory === category }" @click="setActiveCategory(category)">{{ category }}</button></div><div v-if="featuredEntries.length" class="work-grid"><article v-for="(item, index) in featuredEntries" :key="item.id" class="work-card" :class="{ featured: index === 0 }" @click="selectedEntry = item"><img :src="item.image" :alt="item.title" /><div class="work-overlay"><span>{{ item.category }}</span><h3>{{ item.title }}</h3><p>{{ item.metric }}</p></div><div class="work-corner"><ExternalLink :size="15" /></div></article></div><div v-else class="work-empty">这个分类还没有内容，去后台添加第一个节点。</div></section>
 
       <section class="contact-section page-width"><div><p class="overline">LET'S MAKE SOMETHING REAL</p><h2>有一个故事，<br />正在等着被记录。</h2></div><a class="contact-button" :href="`mailto:${profile.email}`"><Mail :size="18" /> {{ profile.email }} <ArrowUpRight :size="18" /></a></section>
     </main>
 
     <main v-else class="admin-page page-width"><div class="admin-top"><div><p class="overline">FIELDNOTE / EDITOR</p><h1>编辑你的个人索引</h1><p>这里的每一处修改都会同步到公开主页。</p></div><button class="text-link" @click="openPublic">返回公开主页 <ExternalLink :size="15" /></button></div><div class="admin-tabs"><button :class="{ active: activeTab === 'profile' }" @click="activeTab = 'profile'">个人资料</button><button :class="{ active: activeTab === 'timeline' }" @click="activeTab = 'timeline'">履历节点 <span>{{ entries.length }}</span></button><button :class="{ active: activeTab === 'appearance' }" @click="activeTab = 'appearance'">外观设置</button></div>
       <section v-if="activeTab === 'profile'" class="editor-panel"><div class="panel-title"><div><span class="panel-kicker">PROFILE / 01</span><h2>先让别人认识你</h2></div><button class="primary-btn" @click="saveProfile"><Save :size="16" /> 保存资料</button></div><div class="editor-grid"><label>你的名字<input v-model="profileForm.name" /></label><label>头像字母<input v-model="profileForm.initials" maxlength="3" /></label><label>身份 / 角色<input v-model="profileForm.role" /></label><label>所在位置<input v-model="profileForm.location" /></label><label class="wide">一句话介绍<textarea v-model="profileForm.tagline" rows="2" /></label><label class="wide">个人简介<textarea v-model="profileForm.bio" rows="5" /></label><label>对外状态<input v-model="profileForm.availability" /></label><label>联系邮箱<input v-model="profileForm.email" type="email" /></label><label class="wide">头像图片地址<input v-model="profileForm.avatar" /></label><label class="wide">兴趣标签（用逗号分隔）<input v-model="profileForm.interests" placeholder="徒步, 摄影, 滑雪" /></label></div><div class="editor-preview"><span class="preview-label">LIVE PREVIEW</span><strong>{{ profileForm.name || '你的名字' }}</strong><span>{{ profileForm.role || '你的身份 / 角色' }}</span></div></section>
-      <section v-else-if="activeTab === 'timeline'" class="editor-panel"><div class="panel-title"><div><span class="panel-kicker">TRACE / 02</span><h2>{{ editingId ? '编辑这个节点' : '添加一个新节点' }}</h2></div><button v-if="editingId" class="icon-button" title="取消编辑" @click="resetEntry"><X :size="17" /></button></div><div class="editor-grid"><label>年份<input v-model="entryForm.year" placeholder="2025" /></label><label>节点日期<input v-model="entryForm.date" placeholder="2025.02 — 至今" /></label><label>节点类型<select v-model="entryForm.category"><option>PROJECT</option><option>CURRENTLY</option><option>SERIES</option><option>LEARNING</option><option>LIFE</option></select></label><label>地点<input v-model="entryForm.place" placeholder="中国 · 西南线" /></label><label class="wide">标题<input v-model="entryForm.title" placeholder="这个节点发生了什么？" /></label><label class="wide">一句话摘要<textarea v-model="entryForm.summary" rows="2" /></label><label class="wide">详细介绍<textarea v-model="entryForm.body" rows="5" /></label><label class="wide">标签（用逗号分隔）<input v-model="entryForm.tags" placeholder="摄影, 纪实, 长期项目" /></label><label class="wide">图片地址<input v-model="entryForm.image" placeholder="https://..." /></label><label>数据标记<input v-model="entryForm.metric" placeholder="312 km / 03 days" /></label></div><div class="editor-actions"><button class="ghost-btn" @click="resetEntry">清空</button><button class="primary-btn" :disabled="!entryForm.title || !entryForm.year || !entryForm.summary" @click="saveEntry"><Check :size="16" /> {{ editingId ? '保存修改' : '添加节点' }}</button></div><div class="entry-manager"><div class="manager-head"><span>已有节点</span><small>点击编辑或删除</small></div><div v-for="item in sortedEntries" :key="item.id" class="manager-row"><div><strong>{{ item.year }} / {{ item.title }}</strong><span>{{ item.category }} · {{ item.place }}</span></div><div><button class="icon-button" title="编辑节点" @click="editEntry(item)"><Edit3 :size="15" /></button><button class="icon-button danger" title="删除节点" @click="deleteEntry(item.id)"><Trash2 :size="15" /></button></div></div></div></section>
-      <section v-else class="editor-panel"><div class="panel-title"><div><span class="panel-kicker">MOOD / 03</span><h2>选择你的现场</h2></div></div><div class="appearance-options"><button class="appearance-choice selected"><span class="swatch ink"></span><strong>Ink & Paper</strong><small>当前主题 · 深墨黑 / 米白 / 荧光绿</small></button><button class="appearance-choice"><span class="swatch coral"></span><strong>Coral Signal</strong><small>即将支持自定义色彩</small></button><button class="appearance-choice"><span class="swatch cobalt"></span><strong>Cobalt Night</strong><small>即将支持深色模式</small></button></div><div class="motion-note"><Zap :size="17" /><span>页面已启用轻量动效：滚动出现、图片悬停和时间线交互。动效不会影响阅读。</span></div></section>
+      <section v-else-if="activeTab === 'timeline'" class="editor-panel"><div class="panel-title"><div><span class="panel-kicker">TRACE / 02</span><h2>{{ editingId ? '编辑这个节点' : '添加一个新节点' }}</h2></div><button v-if="editingId" class="icon-button" title="取消编辑" @click="resetEntry"><X :size="17" /></button></div><div class="editor-grid"><label>年份<input v-model="entryForm.year" placeholder="2025" /></label><label>节点日期<input v-model="entryForm.date" placeholder="2025.02 — 至今" /></label><label>节点类型<select v-model="entryForm.category"><option v-for="category in categoryOptions" :key="category">{{ category }}</option></select></label><label>地点<input v-model="entryForm.place" placeholder="中国 · 西南线" /></label><label class="wide">标题<input v-model="entryForm.title" placeholder="这个节点发生了什么？" /></label><label class="wide">一句话摘要<textarea v-model="entryForm.summary" rows="2" /></label><label class="wide">详细介绍<textarea v-model="entryForm.body" rows="5" /></label><label class="wide">标签（用逗号分隔）<input v-model="entryForm.tags" placeholder="摄影, 纪实, 长期项目" /></label><label class="wide">图片地址<input v-model="entryForm.image" placeholder="https://..." /></label><label>数据标记<input v-model="entryForm.metric" placeholder="312 km / 03 days" /></label></div><div class="editor-actions"><button class="ghost-btn" @click="resetEntry">清空</button><button class="primary-btn" :disabled="!entryForm.title || !entryForm.year || !entryForm.summary" @click="saveEntry"><Check :size="16" /> {{ editingId ? '保存修改' : '添加节点' }}</button></div><div class="entry-manager"><div class="manager-head"><span>已有节点</span><small>点击编辑或删除</small></div><div v-for="item in sortedEntries" :key="item.id" class="manager-row"><div><strong>{{ item.year }} / {{ item.title }}</strong><span>{{ item.category }} · {{ item.place }}</span></div><div><button class="icon-button" title="编辑节点" @click="editEntry(item)"><Edit3 :size="15" /></button><button class="icon-button danger" title="删除节点" @click="deleteEntry(item.id)"><Trash2 :size="15" /></button></div></div></div></section>
+      <section v-else class="editor-panel"><div class="panel-title"><div><span class="panel-kicker">MOOD / 03</span><h2>选择你的现场</h2></div></div><div class="appearance-options"><button v-for="theme in themeOptions" :key="theme.id" class="appearance-choice" :class="{ selected: profile.theme === theme.id }" @click="setTheme(theme.id)"><span class="swatch" :class="`swatch-${theme.id}`"></span><strong>{{ theme.label }}</strong><small>{{ theme.note }}</small></button></div><div class="motion-note"><Zap :size="17" /><span>主题会同步到公开主页。当前先用 mock 数据和浏览器本地存储，接入服务器后再迁移到正式账户配置。</span></div></section>
     </main>
 
     <footer class="site-footer page-width"><span>© {{ new Date().getFullYear() }} {{ profile.name }} / FIELDNOTE</span><span>MADE TO BE SHARED <Sparkles :size="14" /></span></footer>
