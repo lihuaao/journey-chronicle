@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import {
-  ArrowDownRight, ArrowRight, ArrowUpRight, Check, Compass, Edit3,
-  ExternalLink, Mail, MapPin, Menu, Save, Sparkles, Trash2, X, Zap,
+  ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, Check, Compass, Edit3,
+  ExternalLink, Eye, Image, LayoutDashboard, LogIn, LogOut, Mail, MapPin,
+  Menu, Plus, Save, Settings, ShieldCheck, Sparkles, Trash2, Upload, Video, X,
 } from 'lucide-vue-next'
 
 type ThemeKey = 'signal' | 'coral' | 'cobalt'
 type EntryCategory = 'PROJECT' | 'WORK' | 'LEARNING' | 'LIFE' | 'NOW'
+type AdminSection = 'dashboard' | 'profile' | 'entries' | 'media' | 'settings'
 
 type Profile = {
   name: string
@@ -35,6 +37,16 @@ type Entry = {
   tags: string
   image: string
   metric: string
+}
+
+type MediaAsset = {
+  id: number
+  name: string
+  type: 'IMAGE' | 'VIDEO'
+  size: string
+  date: string
+  url: string
+  entryId?: number
 }
 
 const categoryOptions: EntryCategory[] = ['PROJECT', 'WORK', 'LEARNING', 'LIFE', 'NOW']
@@ -68,10 +80,20 @@ const seedEntries: Entry[] = [
   { id: 5, year: '2021', date: '2021.04 — 2021.09', category: 'LIFE', title: '在城市里找到水面', place: '上海 · 苏州河', summary: '把日常散步变成一份关于城市边缘的生活档案。', body: '没有明确的项目目标，只是每周沿着河走一段，拍下桥下的光、钓鱼的人和慢慢变化的岸线。', tags: '生活, 观察, 城市', image: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1200&q=85', metric: '42 walks' },
 ]
 
+const seedMedia: MediaAsset[] = [
+  { id: 1, name: 'southwest-dawn.jpg', type: 'IMAGE', size: '2.4 MB', date: '2025.02.18', url: 'https://images.unsplash.com/photo-1464278533981-50106e6176b1?auto=format&fit=crop&w=1200&q=85', entryId: 1 },
+  { id: 2, name: 'qiantang-ride.jpg', type: 'IMAGE', size: '1.8 MB', date: '2024.11.03', url: 'https://images.unsplash.com/photo-1502744688674-c619d1586c9e?auto=format&fit=crop&w=1200&q=85', entryId: 2 },
+  { id: 3, name: 'blue-hour-17.mp4', type: 'VIDEO', size: '18.6 MB', date: '2024.01.08', url: 'https://images.unsplash.com/photo-1486911278844-a81c5267e227?auto=format&fit=crop&w=1200&q=85', entryId: 3 },
+  { id: 4, name: 'city-waterline.jpg', type: 'IMAGE', size: '3.1 MB', date: '2021.09.20', url: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1200&q=85', entryId: 5 },
+]
+
 const profile = ref<Profile>({ ...seedProfile })
 const entries = ref<Entry[]>([])
 const activeView = ref<'public' | 'admin'>('public')
-const activeTab = ref<'profile' | 'timeline' | 'appearance'>('profile')
+const adminAuthenticated = ref(false)
+const adminSection = ref<AdminSection>('dashboard')
+const adminNotice = ref('')
+const mediaAssets = ref<MediaAsset[]>([])
 const activeCategory = ref<'ALL' | EntryCategory>('ALL')
 const selectedEntry = ref<Entry | null>(null)
 const editingId = ref<number | null>(null)
@@ -84,7 +106,9 @@ onMounted(() => {
   const storedEntries = JSON.parse(localStorage.getItem('fieldnote-entries') || 'null') as Array<Partial<Entry>> | null
   profile.value = { ...seedProfile, ...storedProfile, theme: storedProfile?.theme ?? seedProfile.theme }
   entries.value = storedEntries ? storedEntries.map(normalizeEntry) : seedEntries
+  mediaAssets.value = JSON.parse(localStorage.getItem('fieldnote-media') || JSON.stringify(seedMedia)) as MediaAsset[]
   profileForm.value = { ...profile.value }
+  if (window.location.hash === '#/admin') activeView.value = 'admin'
 })
 
 const interestList = computed(() => profile.value.interests.split(',').map(item => item.trim()).filter(Boolean))
@@ -117,7 +141,7 @@ function resetEntry() {
   editingId.value = null
   entryForm.value = { ...seedEntries[0], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' }
 }
-function editEntry(item: Entry) { editingId.value = item.id; entryForm.value = { ...item }; activeTab.value = 'timeline'; window.scrollTo({ top: 0, behavior: 'smooth' }) }
+function editEntry(item: Entry) { editingId.value = item.id; entryForm.value = { ...item }; adminSection.value = 'entries'; window.scrollTo({ top: 0, behavior: 'smooth' }) }
 function saveEntry() {
   if (!entryForm.value.title || !entryForm.value.year || !entryForm.value.summary) return
   const next = normalizeEntry({ ...entryForm.value, id: editingId.value || Date.now(), image: entryForm.value.image || seedEntries[0].image })
@@ -128,17 +152,27 @@ function deleteEntry(id: number) {
   entries.value = entries.value.filter(item => item.id !== id)
   localStorage.setItem('fieldnote-entries', JSON.stringify(entries.value))
 }
-function openPublic() { activeView.value = 'public'; mobileOpen.value = false }
+function openPublic() { activeView.value = 'public'; adminAuthenticated.value = false; mobileOpen.value = false; window.location.hash = '' }
+function openAdmin() { activeView.value = 'admin'; mobileOpen.value = false; window.location.hash = '/admin' }
+function loginAdmin() { adminAuthenticated.value = true; adminSection.value = 'dashboard'; adminNotice.value = '已进入本地模拟管理环境'; }
+function logoutAdmin() { adminAuthenticated.value = false; adminNotice.value = ''; openPublic() }
+function selectAdminSection(section: AdminSection) { adminSection.value = section; adminNotice.value = '' }
+function addMockMedia() {
+  const next: MediaAsset = { id: Date.now(), name: `field-note-${mediaAssets.value.length + 1}.jpg`, type: 'IMAGE', size: '2.1 MB', date: new Date().toISOString().slice(0, 10), url: seedEntries[mediaAssets.value.length % seedEntries.length].image }
+  mediaAssets.value = [next, ...mediaAssets.value]
+  localStorage.setItem('fieldnote-media', JSON.stringify(mediaAssets.value))
+  adminNotice.value = '已添加一条 mock 媒体资源'
+}
 function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = false; requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })) }
 </script>
 
 <template>
   <div class="app-shell" :class="`theme-${profile.theme}`">
-    <header class="site-header">
+    <header v-if="activeView === 'public'" class="site-header">
       <button class="wordmark" @click="openPublic"><span class="wordmark-dot"></span><span>FIELDNOTE</span><small>/ PERSONAL INDEX</small></button>
-      <nav class="desktop-nav"><button @click="scrollTo('about')">关于我</button><button @click="scrollTo('timeline')">履历时间线</button><button @click="scrollTo('work')">作品切片</button><button class="edit-link" @click="activeView = 'admin'"><Edit3 :size="14" /> 编辑主页</button></nav>
+      <nav class="desktop-nav"><button @click="scrollTo('about')">关于我</button><button @click="scrollTo('timeline')">履历时间线</button><button @click="scrollTo('work')">作品切片</button><button class="edit-link" @click="openAdmin"><LogIn :size="14" /> 后台登录</button></nav>
       <button class="icon-button mobile-menu" title="打开菜单" @click="mobileOpen = !mobileOpen"><Menu :size="18" /></button>
-      <div v-if="mobileOpen" class="mobile-nav"><button @click="scrollTo('about')">关于我</button><button @click="scrollTo('timeline')">履历时间线</button><button @click="scrollTo('work')">作品切片</button><button @click="activeView = 'admin'; mobileOpen = false">编辑主页</button></div>
+      <div v-if="mobileOpen" class="mobile-nav"><button @click="scrollTo('about')">关于我</button><button @click="scrollTo('timeline')">履历时间线</button><button @click="scrollTo('work')">作品切片</button><button @click="openAdmin">后台登录</button></div>
     </header>
 
     <main v-if="activeView === 'public'" class="public-page">
@@ -158,13 +192,47 @@ function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = 
       <section class="contact-section page-width"><div><p class="overline">LET'S MAKE SOMETHING REAL</p><h2>有一个故事，<br />正在等着被记录。</h2></div><a class="contact-button" :href="`mailto:${profile.email}`"><Mail :size="18" /> {{ profile.email }} <ArrowUpRight :size="18" /></a></section>
     </main>
 
-    <main v-else class="admin-page page-width"><div class="admin-top"><div><p class="overline">FIELDNOTE / EDITOR</p><h1>编辑你的个人索引</h1><p>这里的每一处修改都会同步到公开主页。</p></div><button class="text-link" @click="openPublic">返回公开主页 <ExternalLink :size="15" /></button></div><div class="admin-tabs"><button :class="{ active: activeTab === 'profile' }" @click="activeTab = 'profile'">个人资料</button><button :class="{ active: activeTab === 'timeline' }" @click="activeTab = 'timeline'">履历节点 <span>{{ entries.length }}</span></button><button :class="{ active: activeTab === 'appearance' }" @click="activeTab = 'appearance'">外观设置</button></div>
-      <section v-if="activeTab === 'profile'" class="editor-panel"><div class="panel-title"><div><span class="panel-kicker">PROFILE / 01</span><h2>先让别人认识你</h2></div><button class="primary-btn" @click="saveProfile"><Save :size="16" /> 保存资料</button></div><div class="editor-grid"><label>你的名字<input v-model="profileForm.name" /></label><label>头像字母<input v-model="profileForm.initials" maxlength="3" /></label><label>身份 / 角色<input v-model="profileForm.role" /></label><label>所在位置<input v-model="profileForm.location" /></label><label class="wide">一句话介绍<textarea v-model="profileForm.tagline" rows="2" /></label><label class="wide">个人简介<textarea v-model="profileForm.bio" rows="5" /></label><label>对外状态<input v-model="profileForm.availability" /></label><label>联系邮箱<input v-model="profileForm.email" type="email" /></label><label class="wide">头像图片地址<input v-model="profileForm.avatar" /></label><label class="wide">兴趣标签（用逗号分隔）<input v-model="profileForm.interests" placeholder="徒步, 摄影, 滑雪" /></label></div><div class="editor-preview"><span class="preview-label">LIVE PREVIEW</span><strong>{{ profileForm.name || '你的名字' }}</strong><span>{{ profileForm.role || '你的身份 / 角色' }}</span></div></section>
-      <section v-else-if="activeTab === 'timeline'" class="editor-panel"><div class="panel-title"><div><span class="panel-kicker">TRACE / 02</span><h2>{{ editingId ? '编辑这个节点' : '添加一个新节点' }}</h2></div><button v-if="editingId" class="icon-button" title="取消编辑" @click="resetEntry"><X :size="17" /></button></div><div class="editor-grid"><label>年份<input v-model="entryForm.year" placeholder="2025" /></label><label>节点日期<input v-model="entryForm.date" placeholder="2025.02 — 至今" /></label><label>节点类型<select v-model="entryForm.category"><option v-for="category in categoryOptions" :key="category">{{ category }}</option></select></label><label>地点<input v-model="entryForm.place" placeholder="中国 · 西南线" /></label><label class="wide">标题<input v-model="entryForm.title" placeholder="这个节点发生了什么？" /></label><label class="wide">一句话摘要<textarea v-model="entryForm.summary" rows="2" /></label><label class="wide">详细介绍<textarea v-model="entryForm.body" rows="5" /></label><label class="wide">标签（用逗号分隔）<input v-model="entryForm.tags" placeholder="摄影, 纪实, 长期项目" /></label><label class="wide">图片地址<input v-model="entryForm.image" placeholder="https://..." /></label><label>数据标记<input v-model="entryForm.metric" placeholder="312 km / 03 days" /></label></div><div class="editor-actions"><button class="ghost-btn" @click="resetEntry">清空</button><button class="primary-btn" :disabled="!entryForm.title || !entryForm.year || !entryForm.summary" @click="saveEntry"><Check :size="16" /> {{ editingId ? '保存修改' : '添加节点' }}</button></div><div class="entry-manager"><div class="manager-head"><span>已有节点</span><small>点击编辑或删除</small></div><div v-for="item in sortedEntries" :key="item.id" class="manager-row"><div><strong>{{ item.year }} / {{ item.title }}</strong><span>{{ item.category }} · {{ item.place }}</span></div><div><button class="icon-button" title="编辑节点" @click="editEntry(item)"><Edit3 :size="15" /></button><button class="icon-button danger" title="删除节点" @click="deleteEntry(item.id)"><Trash2 :size="15" /></button></div></div></div></section>
-      <section v-else class="editor-panel"><div class="panel-title"><div><span class="panel-kicker">MOOD / 03</span><h2>选择你的现场</h2></div></div><div class="appearance-options"><button v-for="theme in themeOptions" :key="theme.id" class="appearance-choice" :class="{ selected: profile.theme === theme.id }" @click="setTheme(theme.id)"><span class="swatch" :class="`swatch-${theme.id}`"></span><strong>{{ theme.label }}</strong><small>{{ theme.note }}</small></button></div><div class="motion-note"><Zap :size="17" /><span>主题会同步到公开主页。当前先用 mock 数据和浏览器本地存储，接入服务器后再迁移到正式账户配置。</span></div></section>
+    <main v-else class="admin-page">
+      <section v-if="!adminAuthenticated" class="admin-login page-width">
+        <div class="admin-login-mark"><ShieldCheck :size="22" /></div>
+        <p class="overline">FIELDNOTE / OWNER ACCESS</p>
+        <h1>进入你的内容后台。</h1>
+        <p>公开链接只负责展示。节点、作品、媒体和个人资料，都在这个独立的管理工作台中维护。</p>
+        <div class="admin-login-form"><label>管理员邮箱<input value="owner@fieldnote.me" type="email" /></label><label>访问密码<input value="mock-password" type="password" /></label><button class="primary-btn" @click="loginAdmin"><LogIn :size="16" /> 进入模拟后台</button></div>
+        <button class="text-link" @click="openPublic">返回公开主页 <ExternalLink :size="15" /></button>
+      </section>
+
+      <div v-else class="admin-platform">
+        <aside class="admin-sidebar">
+          <button class="admin-brand" @click="selectAdminSection('dashboard')"><span class="wordmark-dot"></span><strong>FIELDNOTE</strong><small>/ EDITOR</small></button>
+          <div class="sidebar-group"><small>CONTENT</small><button :class="{ active: adminSection === 'dashboard' }" @click="selectAdminSection('dashboard')"><LayoutDashboard :size="15" /> 概览</button><button :class="{ active: adminSection === 'profile' }" @click="selectAdminSection('profile')"><Edit3 :size="15" /> 个人资料</button><button :class="{ active: adminSection === 'entries' }" @click="selectAdminSection('entries')"><BarChart3 :size="15" /> 履历节点 <span>{{ entries.length }}</span></button><button :class="{ active: adminSection === 'media' }" @click="selectAdminSection('media')"><Image :size="15" /> 作品媒体 <span>{{ mediaAssets.length }}</span></button></div>
+          <div class="sidebar-group"><small>SETTINGS</small><button :class="{ active: adminSection === 'settings' }" @click="selectAdminSection('settings')"><Settings :size="15" /> 公开设置</button></div>
+          <div class="sidebar-footer"><button @click="openPublic"><Eye :size="15" /> 查看公开主页</button><button @click="logoutAdmin"><LogOut :size="15" /> 退出后台</button></div>
+        </aside>
+
+        <section class="admin-content">
+          <header class="admin-toolbar"><div><p class="overline">FIELDNOTE / EDITOR</p><h1>{{ adminSection === 'dashboard' ? '早上好，Li Hao' : adminSection === 'profile' ? '个人资料' : adminSection === 'entries' ? '履历节点' : adminSection === 'media' ? '作品媒体' : '公开设置' }}</h1><p>{{ adminSection === 'dashboard' ? '你的个人主页最近一次更新：今天 10:24' : '这里的修改只会影响公开页面的内容，不会改变分享链接的权限。' }}</p></div><button class="text-link" @click="openPublic"><Eye :size="15" /> 查看公开主页</button></header>
+          <div v-if="adminNotice" class="admin-notice"><Check :size="15" /> {{ adminNotice }}</div>
+
+          <section v-if="adminSection === 'dashboard'" class="admin-dashboard">
+            <div class="admin-metric-row"><article><small>PUBLIC VIEWS / 30D</small><strong>2,480</strong><span>mock analytics</span></article><article><small>TRACE NODES</small><strong>{{ entries.length.toString().padStart(2, '0') }}</strong><span>published nodes</span></article><article><small>MEDIA ASSETS</small><strong>{{ mediaAssets.length.toString().padStart(3, '0') }}</strong><span>images + videos</span></article></div>
+            <div class="admin-section-heading"><div><span class="panel-kicker">CONTENT / RECENT</span><h2>最近编辑的节点</h2></div><button class="ghost-btn" @click="selectAdminSection('entries')">管理全部 <ArrowRight :size="15" /></button></div>
+            <div class="admin-manager-list"><article v-for="item in sortedEntries.slice(0, 4)" :key="item.id" class="admin-manager-row"><span class="manager-year">{{ item.year }}</span><div><strong>{{ item.title }}</strong><span>{{ item.category }} · {{ item.place }}</span></div><button class="icon-button" title="编辑节点" @click="editEntry(item)"><Edit3 :size="15" /></button></article></div>
+            <div class="admin-boundary"><ShieldCheck :size="18" /><div><strong>公开链接当前为只读</strong><p>访客只能查看已发布的个人资料、履历和作品。所有修改必须经过这个后台入口。</p></div><span>OWNER ONLY</span></div>
+          </section>
+
+          <section v-else-if="adminSection === 'profile'" class="admin-panel"><div class="panel-title"><div><span class="panel-kicker">PROFILE / 01</span><h2>先让别人认识你</h2></div><button class="primary-btn" @click="saveProfile"><Save :size="16" /> 保存资料</button></div><div class="editor-grid"><label>你的名字<input v-model="profileForm.name" /></label><label>头像字母<input v-model="profileForm.initials" maxlength="3" /></label><label>身份 / 角色<input v-model="profileForm.role" /></label><label>所在位置<input v-model="profileForm.location" /></label><label class="wide">一句话介绍<textarea v-model="profileForm.tagline" rows="2" /></label><label class="wide">个人简介<textarea v-model="profileForm.bio" rows="5" /></label><label>对外状态<input v-model="profileForm.availability" /></label><label>联系邮箱<input v-model="profileForm.email" type="email" /></label><label class="wide">头像图片地址<input v-model="profileForm.avatar" /></label><label class="wide">兴趣标签（用逗号分隔）<input v-model="profileForm.interests" placeholder="徒步, 摄影, 滑雪" /></label></div><div class="editor-preview"><span class="preview-label">LIVE PREVIEW</span><strong>{{ profileForm.name || '你的名字' }}</strong><span>{{ profileForm.role || '你的身份 / 角色' }}</span></div></section>
+
+          <section v-else-if="adminSection === 'entries'" class="admin-panel"><div class="panel-title"><div><span class="panel-kicker">TRACE / 02</span><h2>{{ editingId ? '编辑履历节点' : '添加履历节点' }}</h2></div><button v-if="editingId" class="icon-button" title="取消编辑" @click="resetEntry"><X :size="17" /></button></div><div class="editor-grid"><label>年份<input v-model="entryForm.year" placeholder="2025" /></label><label>节点日期<input v-model="entryForm.date" placeholder="2025.02 — 至今" /></label><label>节点类型<select v-model="entryForm.category"><option v-for="category in categoryOptions" :key="category">{{ category }}</option></select></label><label>地点<input v-model="entryForm.place" placeholder="中国 · 西南线" /></label><label class="wide">标题<input v-model="entryForm.title" placeholder="这个节点发生了什么？" /></label><label class="wide">一句话摘要<textarea v-model="entryForm.summary" rows="2" /></label><label class="wide">详细介绍<textarea v-model="entryForm.body" rows="5" /></label><label class="wide">标签（用逗号分隔）<input v-model="entryForm.tags" placeholder="摄影, 纪实, 长期项目" /></label><label class="wide">封面图片地址<input v-model="entryForm.image" placeholder="https://..." /></label><label>数据标记<input v-model="entryForm.metric" placeholder="312 km / 03 days" /></label></div><div class="editor-actions"><button class="ghost-btn" @click="resetEntry">清空</button><button class="primary-btn" :disabled="!entryForm.title || !entryForm.year || !entryForm.summary" @click="saveEntry"><Check :size="16" /> {{ editingId ? '保存修改' : '发布节点' }}</button></div><div class="admin-section-heading"><div><span class="panel-kicker">CONTENT / MANAGE</span><h2>已有节点</h2></div><span class="admin-count">{{ entries.length }} nodes</span></div><div class="admin-manager-list"><article v-for="item in sortedEntries" :key="item.id" class="admin-manager-row"><span class="manager-year">{{ item.year }}</span><div><strong>{{ item.title }}</strong><span>{{ item.category }} · {{ item.place }}</span></div><div class="row-actions"><button class="icon-button" title="编辑节点" @click="editEntry(item)"><Edit3 :size="15" /></button><button class="icon-button danger" title="删除节点" @click="deleteEntry(item.id)"><Trash2 :size="15" /></button></div></article></div></section>
+
+          <section v-else-if="adminSection === 'media'" class="admin-panel"><div class="panel-title"><div><span class="panel-kicker">MEDIA / 03</span><h2>管理你的作品媒体</h2></div><button class="primary-btn" @click="addMockMedia"><Upload :size="16" /> 添加 mock 媒体</button></div><div class="media-dropzone"><Upload :size="22" /><strong>拖入图片或视频，或添加一条 mock 资源</strong><span>当前无服务器，先用本地 mock 数据维护上传效果。</span></div><div class="media-grid"><article v-for="asset in mediaAssets" :key="asset.id" class="media-card"><div class="media-thumb"><img :src="asset.url" :alt="asset.name" /><span v-if="asset.type === 'VIDEO'"><Video :size="14" /> VIDEO</span></div><div><strong>{{ asset.name }}</strong><small>{{ asset.type }} · {{ asset.size }} · {{ asset.date }}</small></div></article></div></section>
+
+          <section v-else class="admin-panel"><div class="panel-title"><div><span class="panel-kicker">SETTINGS / 04</span><h2>公开页面设置</h2></div></div><div class="setting-block"><div><strong>公开状态</strong><span>分享链接当前可被访问，访客只能读取已发布内容。</span></div><span class="status-pill"><i></i> PUBLIC / READ ONLY</span></div><div class="setting-block"><div><strong>选择视觉主题</strong><span>主题配置会同步到公开主页，内容与权限保持不变。</span></div><div class="appearance-options"><button v-for="theme in themeOptions" :key="theme.id" class="appearance-choice" :class="{ selected: profile.theme === theme.id }" @click="setTheme(theme.id)"><span class="swatch" :class="`swatch-${theme.id}`"></span><strong>{{ theme.label }}</strong><small>{{ theme.note }}</small></button></div></div><div class="admin-boundary"><ShieldCheck :size="18" /><div><strong>权限边界</strong><p>公开页不提供任何写入接口；接入正式服务器后，这里会替换为真实账号、会话和内容 API。</p></div></div></section>
+        </section>
+      </div>
     </main>
 
-    <footer class="site-footer page-width"><span>© {{ new Date().getFullYear() }} {{ profile.name }} / FIELDNOTE</span><span>MADE TO BE SHARED <Sparkles :size="14" /></span></footer>
+    <footer v-if="activeView === 'public'" class="site-footer page-width"><span>© {{ new Date().getFullYear() }} {{ profile.name }} / FIELDNOTE</span><span>MADE TO BE SHARED <Sparkles :size="14" /></span></footer>
 
     <div v-if="selectedEntry" class="detail-backdrop" @click.self="selectedEntry = null"><article class="detail-modal"><button class="modal-close icon-button" title="关闭详情" @click="selectedEntry = null"><X :size="17" /></button><img :src="selectedEntry.image" :alt="selectedEntry.title" /><div class="modal-content"><div class="trace-meta"><span>{{ selectedEntry.category }}</span><time>{{ selectedEntry.date }}</time></div><h2>{{ selectedEntry.title }}</h2><p class="trace-place"><MapPin :size="13" /> {{ selectedEntry.place }}</p><p class="modal-body">{{ selectedEntry.body }}</p><div class="mini-tags"><span v-for="tag in selectedEntry.tags.split(',')" :key="tag">{{ tag.trim() }}</span></div><div class="modal-metric">{{ selectedEntry.metric }}</div></div></article></div>
   </div>
