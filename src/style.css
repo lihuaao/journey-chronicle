@@ -485,19 +485,50 @@ img { display: block; max-width: 100%; }
   background: rgba(255, 255, 255, .38);
 }
 
-.route-line span {
+.route-line > .route-stop {
   position: relative;
   z-index: 1;
   width: 15px;
   height: 15px;
+  display: block;
+  padding: 0;
   border: 3px solid rgba(22, 39, 29, .7);
   border-radius: 50%;
   background: var(--accent-2);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, .36);
+  cursor: help;
+  outline: 0;
 }
 
-.route-line span:first-child { background: var(--accent); }
-.route-line span:nth-child(3) { background: var(--accent-3); }
+.route-line > .route-stop:first-child { background: var(--accent); }
+.route-line > .route-stop:nth-child(3) { background: var(--accent-3); }
+
+.route-tip {
+  position: absolute;
+  left: 50%;
+  bottom: 27px;
+  z-index: 4;
+  width: max-content;
+  max-width: 190px;
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, .4);
+  border-radius: 4px;
+  background: rgba(13, 23, 17, .92);
+  color: #fffef9;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .2);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 5px);
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.route-tip b { color: #b8f1d4; font: 700 9px var(--mono); }
+.route-tip strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.route-stop:hover .route-tip,
+.route-stop:focus-visible .route-tip { opacity: 1; transform: translate(-50%, 0); }
+.route-stop:focus-visible { box-shadow: 0 0 0 1px rgba(255, 255, 255, .36), 0 0 0 4px rgba(184, 241, 212, .34); }
 
 .route-current {
   width: 100%;
@@ -1448,7 +1479,8 @@ img { display: block; max-width: 100%; }
   background: var(--ink);
 }
 
-.media-thumb img {
+.media-thumb img,
+.media-thumb video {
   width: 100%;
   height: 100%;
   object-fit: cover;

@@ -83,8 +83,9 @@ const seedEntries: Entry[] = [
 const seedMedia: MediaAsset[] = [
   { id: 1, name: 'southwest-dawn.jpg', type: 'IMAGE', size: '2.4 MB', date: '2025.02.18', url: 'https://images.unsplash.com/photo-1464278533981-50106e6176b1?auto=format&fit=crop&w=1200&q=85', entryId: 1 },
   { id: 2, name: 'qiantang-ride.jpg', type: 'IMAGE', size: '1.8 MB', date: '2024.11.03', url: 'https://images.unsplash.com/photo-1502744688674-c619d1586c9e?auto=format&fit=crop&w=1200&q=85', entryId: 2 },
-  { id: 3, name: 'blue-hour-17.mp4', type: 'VIDEO', size: '18.6 MB', date: '2024.01.08', url: 'https://images.unsplash.com/photo-1486911278844-a81c5267e227?auto=format&fit=crop&w=1200&q=85', entryId: 3 },
+  { id: 3, name: 'wildflower-motion.mp4', type: 'VIDEO', size: '1.1 MB', date: '2024.01.08', url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', entryId: 3 },
   { id: 4, name: 'city-waterline.jpg', type: 'IMAGE', size: '3.1 MB', date: '2021.09.20', url: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1200&q=85', entryId: 5 },
+  { id: 5, name: 'trail-sequence.mp4', type: 'VIDEO', size: '5.2 MB', date: '2024.10.19', url: 'https://media.w3.org/2010/05/sintel/trailer.mp4', entryId: 2 },
 ]
 
 const profile = ref<Profile>({ ...seedProfile })
@@ -111,7 +112,9 @@ onMounted(() => {
   const storedEntries = JSON.parse(localStorage.getItem('fieldnote-entries') || 'null') as Array<Partial<Entry>> | null
   profile.value = { ...seedProfile, ...storedProfile, theme: storedProfile?.theme ?? seedProfile.theme }
   entries.value = storedEntries ? storedEntries.map(normalizeEntry) : seedEntries
-  mediaAssets.value = JSON.parse(localStorage.getItem('fieldnote-media') || JSON.stringify(seedMedia)) as MediaAsset[]
+  const storedMedia = JSON.parse(localStorage.getItem('fieldnote-media') || 'null') as MediaAsset[] | null
+  mediaAssets.value = hydrateMediaAssets(storedMedia)
+  localStorage.setItem('fieldnote-media', JSON.stringify(mediaAssets.value))
   profileForm.value = { ...profile.value }
   if (window.location.hash === '#/admin') activeView.value = 'admin'
   updateHeaderState()
@@ -148,6 +151,16 @@ function normalizeCategory(value: string | undefined): EntryCategory {
 }
 function normalizeEntry(item: Partial<Entry>): Entry {
   return { ...seedEntries[0], ...item, id: Number(item.id || Date.now()), category: normalizeCategory(item.category) }
+}
+function hydrateMediaAssets(stored: MediaAsset[] | null): MediaAsset[] {
+  if (!stored) return seedMedia
+  const fixtures = new Map(seedMedia.map(asset => [asset.id, asset]))
+  const hydrated = stored.map(asset => {
+    const fixture = fixtures.get(asset.id)
+    return fixture?.type === 'VIDEO' ? { ...asset, ...fixture } : asset
+  })
+  const existingIds = new Set(hydrated.map(asset => asset.id))
+  return [...hydrated, ...seedMedia.filter(asset => asset.type === 'VIDEO' && !existingIds.has(asset.id))]
 }
 
 function saveProfile() {
@@ -251,7 +264,9 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
                 <strong>{{ sortedEntries[0]?.year || 'NOW' }}</strong>
               </div>
               <div class="route-line">
-                <span v-for="item in sortedEntries.slice(0, 4)" :key="item.id" :title="item.title"></span>
+                <span v-for="item in sortedEntries.slice(0, 4)" :key="item.id" class="route-stop" tabindex="0">
+                  <span class="route-tip"><b>{{ item.year }}</b><strong>{{ item.category }} / {{ item.title }}</strong></span>
+                </span>
               </div>
               <button v-if="sortedEntries[0]" class="route-current" @click="selectedEntry = sortedEntries[0]">
                 <span>{{ sortedEntries[0].category }}</span>
@@ -482,7 +497,11 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
             <div class="media-dropzone"><Upload :size="22" /><strong>拖入图片或视频</strong><span>当前无服务器，先用本地 mock 数据维护上传效果。</span></div>
             <div class="media-grid">
               <article v-for="asset in mediaAssets" :key="asset.id" class="media-card">
-                <div class="media-thumb"><img :src="asset.url" :alt="asset.name" /><span v-if="asset.type === 'VIDEO'"><Video :size="14" /> VIDEO</span></div>
+                <div class="media-thumb">
+                  <video v-if="asset.type === 'VIDEO'" :src="asset.url" muted loop autoplay playsinline preload="metadata"></video>
+                  <img v-else :src="asset.url" :alt="asset.name" />
+                  <span v-if="asset.type === 'VIDEO'"><Video :size="14" /> VIDEO</span>
+                </div>
                 <div><strong>{{ asset.name }}</strong><small>{{ asset.type }} / {{ asset.size }} / {{ asset.date }}</small></div>
               </article>
             </div>
