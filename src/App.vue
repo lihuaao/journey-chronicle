@@ -103,9 +103,12 @@ const heroTilt = ref({ x: 0, y: 0 })
 const headerScrolled = ref(false)
 const timelineElement = ref<HTMLElement | null>(null)
 const timelineRevealed = ref(false)
+const activeTimelineIndex = ref(0)
+const timelineInView = ref(false)
 const profileForm = ref<Profile>({ ...seedProfile })
 const entryForm = ref<Entry>({ ...seedEntries[0], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' })
 let timelineObserver: IntersectionObserver | undefined
+let timelineRotationTimer: number | undefined
 
 onMounted(() => {
   const storedProfile = JSON.parse(localStorage.getItem('fieldnote-profile') || 'null') as Partial<Profile> | null
@@ -121,20 +124,28 @@ onMounted(() => {
   window.addEventListener('scroll', updateHeaderState, { passive: true })
   window.addEventListener('keydown', handleGlobalKeydown)
   nextTick(() => {
-    if (!timelineElement.value || !('IntersectionObserver' in window)) { timelineRevealed.value = true; return }
-    timelineObserver = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) return
+    if (!timelineElement.value || !('IntersectionObserver' in window)) {
       timelineRevealed.value = true
-      timelineObserver?.disconnect()
+      timelineInView.value = true
+      syncTimelineRotation()
+      return
+    }
+    timelineObserver = new IntersectionObserver(([entry]) => {
+      timelineInView.value = entry.isIntersecting
+      if (entry.isIntersecting) timelineRevealed.value = true
+      syncTimelineRotation()
     }, { threshold: .18 })
     timelineObserver.observe(timelineElement.value)
   })
+  window.addEventListener('visibilitychange', syncTimelineRotation)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateHeaderState)
   window.removeEventListener('keydown', handleGlobalKeydown)
+  window.removeEventListener('visibilitychange', syncTimelineRotation)
   timelineObserver?.disconnect()
+  stopTimelineRotation()
 })
 
 const interestList = computed(() => profile.value.interests.split(',').map(item => item.trim()).filter(Boolean))
@@ -143,6 +154,7 @@ const featuredEntries = computed(() => {
   const source = activeCategory.value === 'ALL' ? sortedEntries.value : sortedEntries.value.filter(item => item.category === activeCategory.value)
   return source.slice(0, 4)
 })
+const timelineBackground = computed(() => sortedEntries.value[activeTimelineIndex.value % Math.max(sortedEntries.value.length, 1)] ?? seedEntries[0])
 
 function normalizeCategory(value: string | undefined): EntryCategory {
   if (value === 'CURRENTLY') return 'NOW'
@@ -203,6 +215,19 @@ function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = 
 function updateHeaderState() { headerScrolled.value = window.scrollY > 42 }
 function handleGlobalKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && selectedEntry.value) selectedEntry.value = null
+}
+function stopTimelineRotation() {
+  if (timelineRotationTimer === undefined) return
+  window.clearInterval(timelineRotationTimer)
+  timelineRotationTimer = undefined
+}
+function syncTimelineRotation() {
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (!timelineInView.value || document.hidden || reducedMotion || sortedEntries.value.length < 2) { stopTimelineRotation(); return }
+  if (timelineRotationTimer !== undefined) return
+  timelineRotationTimer = window.setInterval(() => {
+    activeTimelineIndex.value = (activeTimelineIndex.value + 1) % sortedEntries.value.length
+  }, 6000)
 }
 function moveHero(event: PointerEvent) {
   if (event.pointerType === 'touch') return
@@ -315,6 +340,9 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
       </section>
 
       <section id="timeline" ref="timelineElement" class="timeline-section page-width" :class="{ 'is-revealed': timelineRevealed }">
+        <Transition name="timeline-backdrop">
+          <div :key="timelineBackground.id" class="timeline-backdrop" :style="{ '--timeline-image': `url(${timelineBackground.image})` }" aria-hidden="true"></div>
+        </Transition>
         <div class="section-heading">
           <span class="section-index">02 / ROUTE</span>
           <div>
@@ -323,7 +351,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
           </div>
         </div>
         <div class="trace-list">
-          <article v-for="(item, index) in sortedEntries" :key="item.id" class="trace-item" :style="{ '--entry-delay': `${index * 100}ms` }" @click="selectedEntry = item">
+          <article v-for="(item, index) in sortedEntries" :key="item.id" class="trace-item" :class="{ 'is-active': activeTimelineIndex === index }" :style="{ '--entry-delay': `${index * 100}ms` }" @click="activeTimelineIndex = index; selectedEntry = item">
             <time>{{ item.year }}</time>
             <div class="trace-card">
               <div class="trace-copy">
