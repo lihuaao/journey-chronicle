@@ -52,7 +52,7 @@ type MediaAsset = {
 const categoryOptions: EntryCategory[] = ['PROJECT', 'WORK', 'LEARNING', 'LIFE', 'NOW']
 const publicCategories = ['ALL', ...categoryOptions] as const
 const themeOptions: Array<{ id: ThemeKey; label: string; note: string }> = [
-  { id: 'signal', label: 'Night Signal', note: '深色地图 · 薄荷高亮 · 适合夜行记录' },
+  { id: 'signal', label: 'Alpine Light', note: '通透自然 · 薄荷高亮 · 适合旅行档案' },
   { id: 'coral', label: 'Coral Current', note: '暖灰底 · 珊瑚重点 · 更有温度' },
   { id: 'cobalt', label: 'Cobalt Field', note: '冷白底 · 钴蓝重点 · 更偏作品集' },
 ]
@@ -98,6 +98,7 @@ const activeCategory = ref<'ALL' | EntryCategory>('ALL')
 const selectedEntry = ref<Entry | null>(null)
 const editingId = ref<number | null>(null)
 const mobileOpen = ref(false)
+const heroTilt = ref({ x: 0, y: 0 })
 const profileForm = ref<Profile>({ ...seedProfile })
 const entryForm = ref<Entry>({ ...seedEntries[0], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' })
 
@@ -164,6 +165,15 @@ function addMockMedia() {
   adminNotice.value = '已添加一条 mock 媒体资源'
 }
 function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = false; requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })) }
+function moveHero(event: PointerEvent) {
+  if (event.pointerType === 'touch') return
+  const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect()
+  heroTilt.value = {
+    x: Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width - .5) * 2)),
+    y: Math.max(-1, Math.min(1, ((event.clientY - bounds.top) / bounds.height - .5) * 2)),
+  }
+}
+function resetHero() { heroTilt.value = { x: 0, y: 0 } }
 </script>
 
 <template>
@@ -189,39 +199,40 @@ function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = 
     </header>
 
     <main v-if="activeView === 'public'" class="public-page">
-      <section class="hero-section page-width">
-        <div class="hero-copy reveal">
-          <p class="overline"><span class="live-dot"></span> FIELD NOTES / {{ profile.location }}</p>
-          <h1>把日子，<br />走成路线。</h1>
-          <p class="hero-name">{{ profile.name }} <span>/</span> {{ profile.role }}</p>
-          <p class="hero-tagline">{{ profile.tagline }}</p>
-          <div class="hero-actions">
-            <button class="primary-btn" @click="scrollTo('timeline')">浏览旅行足迹 <ArrowDownRight :size="17" /></button>
-            <a class="ghost-btn" :href="`mailto:${profile.email}`">写封信 <Mail :size="16" /></a>
+      <section class="hero-section" :style="{ '--tilt-x': heroTilt.x, '--tilt-y': heroTilt.y }" @pointermove="moveHero" @pointerleave="resetHero">
+        <div class="hero-backdrop" aria-hidden="true"><img :src="profile.avatar" alt="" /></div>
+        <div class="hero-shade" aria-hidden="true"></div>
+        <div class="hero-content page-width">
+          <div class="hero-copy reveal">
+            <p class="overline"><span class="live-dot"></span> FIELD NOTES / {{ profile.location }}</p>
+            <h1>把日子，<br />走成路线。</h1>
+            <p class="hero-name">{{ profile.name }} <span>/</span> {{ profile.role }}</p>
+            <p class="hero-tagline">{{ profile.tagline }}</p>
+            <div class="hero-actions">
+              <button class="primary-btn" @click="scrollTo('timeline')">浏览旅行足迹 <ArrowDownRight :size="17" /></button>
+              <a class="ghost-btn" :href="`mailto:${profile.email}`">写封信 <Mail :size="16" /></a>
+            </div>
           </div>
-        </div>
 
-        <div class="hero-map reveal delay-1">
-          <div class="hero-photo">
-            <img :src="profile.avatar" :alt="profile.name" />
-            <div class="photo-label">
-              <span>BASE</span>
-              <strong>{{ profile.location }}</strong>
+          <div class="hero-map">
+            <div class="hero-base">
+              <MapPin :size="16" />
+              <div><span>HOME BASE</span><strong>{{ profile.location }}</strong></div>
             </div>
-          </div>
-          <div class="route-panel">
-            <div class="route-panel-head">
-              <span>CURRENT EXPEDITION</span>
-              <strong>{{ sortedEntries[0]?.year || 'NOW' }}</strong>
+            <div class="route-panel">
+              <div class="route-panel-head">
+                <span>CURRENT EXPEDITION</span>
+                <strong>{{ sortedEntries[0]?.year || 'NOW' }}</strong>
+              </div>
+              <div class="route-line">
+                <span v-for="item in sortedEntries.slice(0, 4)" :key="item.id" :title="item.title"></span>
+              </div>
+              <button v-if="sortedEntries[0]" class="route-current" @click="selectedEntry = sortedEntries[0]">
+                <span>{{ sortedEntries[0].category }}</span>
+                <strong>{{ sortedEntries[0].title }}</strong>
+                <small><MapPin :size="12" /> {{ sortedEntries[0].place }}</small>
+              </button>
             </div>
-            <div class="route-line">
-              <span v-for="item in sortedEntries.slice(0, 4)" :key="item.id" :title="item.title"></span>
-            </div>
-            <button v-if="sortedEntries[0]" class="route-current" @click="selectedEntry = sortedEntries[0]">
-              <span>{{ sortedEntries[0].category }}</span>
-              <strong>{{ sortedEntries[0].title }}</strong>
-              <small><MapPin :size="12" /> {{ sortedEntries[0].place }}</small>
-            </button>
           </div>
         </div>
       </section>
