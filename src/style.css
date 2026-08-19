@@ -1145,7 +1145,7 @@ img { display: block; max-width: 100%; }
   z-index: 60;
   display: grid;
   place-items: center;
-  padding: 4vw;
+  padding: 32px max(4vw, 28px) 48px;
   background: rgba(9, 11, 13, .66);
   backdrop-filter: blur(8px);
 }
@@ -1159,7 +1159,8 @@ img { display: block; max-width: 100%; }
 .detail-modal {
   position: relative;
   width: min(900px, 100%);
-  height: min(640px, calc(100vh - 64px));
+  height: min(600px, calc(100dvh - 80px));
+  max-height: calc(100dvh - 80px);
   min-height: 0;
   display: grid;
   grid-template-columns: 42% 58%;
@@ -2103,7 +2104,8 @@ img { display: block; max-width: 100%; }
   .detail-modal {
     grid-template-columns: 1fr;
     grid-template-rows: 230px minmax(0, 1fr);
-    height: min(680px, calc(100vh - 32px));
+    height: min(620px, calc(100dvh - 80px));
+    max-height: calc(100dvh - 80px);
   }
 
   .detail-media {
