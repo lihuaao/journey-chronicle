@@ -101,6 +101,7 @@ const editingId = ref<number | null>(null)
 const mobileOpen = ref(false)
 const heroTilt = ref({ x: 0, y: 0 })
 const headerScrolled = ref(false)
+const activePublicSection = ref('home')
 const timelineElement = ref<HTMLElement | null>(null)
 const timelineRevealed = ref(false)
 const activeTimelineIndex = ref(0)
@@ -109,6 +110,7 @@ const profileForm = ref<Profile>({ ...seedProfile })
 const entryForm = ref<Entry>({ ...seedEntries[0], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' })
 let timelineObserver: IntersectionObserver | undefined
 let timelineRotationTimer: number | undefined
+let publicNavObserver: IntersectionObserver | undefined
 
 onMounted(() => {
   const storedProfile = JSON.parse(localStorage.getItem('fieldnote-profile') || 'null') as Partial<Profile> | null
@@ -124,6 +126,13 @@ onMounted(() => {
   window.addEventListener('scroll', updateHeaderState, { passive: true })
   window.addEventListener('keydown', handleGlobalKeydown)
   nextTick(() => {
+    if ('IntersectionObserver' in window) {
+      publicNavObserver = new IntersectionObserver((entries) => {
+        const visibleSection = entries.find(entry => entry.isIntersecting)
+        if (visibleSection) activePublicSection.value = visibleSection.target.id
+      }, { rootMargin: '-35% 0px -55% 0px', threshold: 0 })
+      document.querySelectorAll<HTMLElement>('[data-nav-section]').forEach(section => publicNavObserver?.observe(section))
+    }
     if (!timelineElement.value || !('IntersectionObserver' in window)) {
       timelineRevealed.value = true
       timelineInView.value = true
@@ -143,6 +152,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateHeaderState)
   window.removeEventListener('keydown', handleGlobalKeydown)
+  publicNavObserver?.disconnect()
   window.removeEventListener('visibilitychange', syncTimelineRotation)
   timelineObserver?.disconnect()
   stopTimelineRotation()
@@ -211,7 +221,7 @@ function addMockMedia() {
   localStorage.setItem('fieldnote-media', JSON.stringify(mediaAssets.value))
   adminNotice.value = '已添加一条 mock 媒体资源'
 }
-function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = false; requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })) }
+function scrollTo(id: string) { activeView.value = 'public'; activePublicSection.value = id; mobileOpen.value = false; requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })) }
 function updateHeaderState() { headerScrolled.value = window.scrollY > 42 }
 function handleGlobalKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && selectedEntry.value) selectedEntry.value = null
@@ -248,16 +258,16 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
         <span>JOURNEY CHRONICLE</span>
       </button>
       <nav class="desktop-nav">
-        <button @click="scrollTo('about')">概览</button>
-        <button @click="scrollTo('timeline')">路线</button>
-        <button @click="scrollTo('work')">图集</button>
+        <button :class="{ active: activePublicSection === 'about' }" @click="scrollTo('about')">概览</button>
+        <button :class="{ active: activePublicSection === 'timeline' }" @click="scrollTo('timeline')">路线</button>
+        <button :class="{ active: activePublicSection === 'work' }" @click="scrollTo('work')">图集</button>
         <button class="nav-login" @click="openAdmin"><LogIn :size="14" /> 管理</button>
       </nav>
       <button class="icon-button mobile-menu" title="打开菜单" @click="mobileOpen = !mobileOpen"><Menu :size="18" /></button>
       <div v-if="mobileOpen" class="mobile-nav">
-        <button @click="scrollTo('about')">概览</button>
-        <button @click="scrollTo('timeline')">路线</button>
-        <button @click="scrollTo('work')">图集</button>
+        <button :class="{ active: activePublicSection === 'about' }" @click="scrollTo('about')">概览</button>
+        <button :class="{ active: activePublicSection === 'timeline' }" @click="scrollTo('timeline')">路线</button>
+        <button :class="{ active: activePublicSection === 'work' }" @click="scrollTo('work')">图集</button>
         <button @click="openAdmin">管理</button>
       </div>
     </header>
@@ -303,7 +313,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
         </div>
       </section>
 
-      <section id="about" class="brief-band">
+      <section id="about" data-nav-section class="brief-band">
         <div class="page-width brief-grid">
           <article class="brief-story">
             <span class="section-index">01 / ABOUT THE ARCHIVE</span>
@@ -339,7 +349,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
         </div>
       </section>
 
-      <section id="timeline" ref="timelineElement" class="timeline-section page-width" :class="{ 'is-revealed': timelineRevealed }">
+      <section id="timeline" ref="timelineElement" data-nav-section class="timeline-section page-width" :class="{ 'is-revealed': timelineRevealed }">
         <Transition name="timeline-backdrop">
           <div :key="timelineBackground.id" class="timeline-backdrop" :style="{ '--timeline-image': `url(${timelineBackground.image})` }" aria-hidden="true"></div>
         </Transition>
@@ -373,7 +383,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
         </div>
       </section>
 
-      <section id="work" class="work-section page-width">
+      <section id="work" data-nav-section class="work-section page-width">
         <div class="section-heading">
           <span class="section-index">03 / GALLERY</span>
           <div>

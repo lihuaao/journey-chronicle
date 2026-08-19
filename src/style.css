@@ -98,10 +98,10 @@ img { display: block; max-width: 100%; }
 
 .site-header.is-scrolled {
   border-bottom-color: var(--line);
-  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
   color: var(--ink);
   box-shadow: 0 8px 22px color-mix(in srgb, var(--ink) 7%, transparent);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(24px) saturate(1.35);
 }
 
 .wordmark,
@@ -151,6 +151,25 @@ img { display: block; max-width: 100%; }
   color: #fffef9;
 }
 
+.desktop-nav button:not(.nav-login) {
+  position: relative;
+  transition: color .24s ease;
+}
+
+.desktop-nav button:not(.nav-login)::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  right: 50%;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  transition: left .24s ease, right .24s ease;
+}
+
+.desktop-nav button:not(.nav-login).active { color: #fffef9; }
+.desktop-nav button:not(.nav-login).active::after { left: 0; right: 0; }
+
 .desktop-nav .nav-login {
   display: inline-flex;
   align-items: center;
@@ -174,6 +193,7 @@ img { display: block; max-width: 100%; }
 .site-header.is-scrolled .mobile-nav button { color: var(--muted); }
 .site-header.is-scrolled .desktop-nav button:hover,
 .site-header.is-scrolled .mobile-nav button:hover { color: var(--ink); }
+.site-header.is-scrolled .desktop-nav button:not(.nav-login).active { color: var(--ink); }
 .site-header.is-scrolled .desktop-nav .nav-login {
   border-color: var(--line);
   background: var(--panel);
