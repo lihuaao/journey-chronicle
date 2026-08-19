@@ -52,7 +52,7 @@ type MediaAsset = {
 const categoryOptions: EntryCategory[] = ['PROJECT', 'WORK', 'LEARNING', 'LIFE', 'NOW']
 const publicCategories = ['ALL', ...categoryOptions] as const
 const themeOptions: Array<{ id: ThemeKey; label: string; note: string }> = [
-  { id: 'signal', label: 'Night Signal', note: '深夜蓝底 · 薄荷高亮 · 当前主题' },
+  { id: 'signal', label: 'Night Signal', note: '深色地图 · 薄荷高亮 · 适合夜行记录' },
   { id: 'coral', label: 'Coral Current', note: '暖灰底 · 珊瑚重点 · 更有温度' },
   { id: 'cobalt', label: 'Cobalt Field', note: '冷白底 · 钴蓝重点 · 更偏作品集' },
 ]
@@ -69,7 +69,7 @@ const seedProfile: Profile = {
   email: 'hello@example.com',
   website: 'fieldnote.example',
   interests: '徒步, 骑行, 摄影, 钓鱼, 滑雪',
-  theme: 'signal',
+  theme: 'coral',
 }
 
 const seedEntries: Entry[] = [
@@ -191,13 +191,13 @@ function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = 
     <main v-if="activeView === 'public'" class="public-page">
       <section class="hero-section page-width">
         <div class="hero-copy reveal">
-          <p class="overline"><span class="live-dot"></span> {{ profile.availability }} / {{ profile.location }}</p>
-          <h1>{{ profile.name }}</h1>
-          <p class="hero-role">{{ profile.role }}</p>
+          <p class="overline"><span class="live-dot"></span> FIELD NOTES / {{ profile.location }}</p>
+          <h1>把日子，<br />走成路线。</h1>
+          <p class="hero-name">{{ profile.name }} <span>/</span> {{ profile.role }}</p>
           <p class="hero-tagline">{{ profile.tagline }}</p>
           <div class="hero-actions">
-            <button class="primary-btn" @click="scrollTo('timeline')">查看旅程 <ArrowDownRight :size="17" /></button>
-            <a class="ghost-btn" :href="`mailto:${profile.email}`">联系 <Mail :size="16" /></a>
+            <button class="primary-btn" @click="scrollTo('timeline')">浏览旅行足迹 <ArrowDownRight :size="17" /></button>
+            <a class="ghost-btn" :href="`mailto:${profile.email}`">写封信 <Mail :size="16" /></a>
           </div>
         </div>
 
@@ -211,7 +211,7 @@ function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = 
           </div>
           <div class="route-panel">
             <div class="route-panel-head">
-              <span>ACTIVE LOG</span>
+              <span>CURRENT EXPEDITION</span>
               <strong>{{ sortedEntries[0]?.year || 'NOW' }}</strong>
             </div>
             <div class="route-line">
@@ -229,27 +229,36 @@ function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = 
       <section id="about" class="brief-band">
         <div class="page-width brief-grid">
           <article class="brief-story">
-            <span class="section-index">01 / PROFILE</span>
-            <h2>把每段经历整理成可以回看的坐标。</h2>
+            <span class="section-index">01 / ABOUT THE ARCHIVE</span>
+            <h2>一份不断延长的个人路线图。</h2>
             <p>{{ profile.bio }}</p>
           </article>
           <div class="brief-stats">
             <article>
-              <small>TRACE NODES</small>
+              <small>JOURNEYS</small>
               <strong>{{ entries.length.toString().padStart(2, '0') }}</strong>
-              <span>published</span>
+              <span>stories logged</span>
             </article>
             <article>
-              <small>MEDIA</small>
+              <small>MEDIA ARCHIVE</small>
               <strong>{{ mediaAssets.length.toString().padStart(2, '0') }}</strong>
-              <span>images/video</span>
+              <span>photos &amp; video</span>
             </article>
             <article>
-              <small>FOCUS</small>
+              <small>OUTDOOR FOCUS</small>
               <strong>{{ interestList.length.toString().padStart(2, '0') }}</strong>
-              <span>interests</span>
+              <span>ways of moving</span>
             </article>
           </div>
+        </div>
+        <div class="page-width route-index" aria-label="旅程路线目录">
+          <button v-for="(item, index) in sortedEntries.slice(0, 4)" :key="item.id" class="route-index-item" @click="selectedEntry = item">
+            <span>0{{ index + 1 }}</span>
+            <strong>{{ item.title }}</strong>
+            <small><MapPin :size="13" /> {{ item.place }}</small>
+            <time>{{ item.year }}</time>
+            <ArrowUpRight :size="16" />
+          </button>
         </div>
       </section>
 
@@ -257,8 +266,8 @@ function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = 
         <div class="section-heading">
           <span class="section-index">02 / ROUTE</span>
           <div>
-            <h2>从现在往回看，每个节点都留下形状。</h2>
-            <p>点击任意节点，查看这一段旅程的背景、地点、标签和记录正文。</p>
+            <h2>沿着发生的顺序，重走一遍。</h2>
+            <p>每个节点保留地点、时间、照片和当时的心情。点击它，打开完整记录。</p>
           </div>
         </div>
         <div class="trace-list">
@@ -285,8 +294,8 @@ function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = 
         <div class="section-heading">
           <span class="section-index">03 / GALLERY</span>
           <div>
-            <h2>作品图集，让路径变得可见。</h2>
-            <p>筛选项目、工作、学习、生活或正在发生的内容。</p>
+            <h2>路上看见的，都留在这里。</h2>
+            <p>从正在发生的远行到城市里的日常观察，按主题筛选这些画面。</p>
           </div>
         </div>
         <div class="work-filters">
@@ -309,7 +318,7 @@ function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = 
       <section class="contact-section page-width">
         <div>
           <p class="overline">NEXT CHAPTER</p>
-          <h2>有新的路线、项目或影像计划，可以从这里开始。</h2>
+          <h2>下一段路，可能从一封邮件开始。</h2>
         </div>
         <a class="contact-button" :href="`mailto:${profile.email}`">{{ profile.email }} <ArrowRight :size="17" /></a>
       </section>
