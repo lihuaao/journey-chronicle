@@ -116,6 +116,7 @@ onMounted(() => {
   if (window.location.hash === '#/admin') activeView.value = 'admin'
   updateHeaderState()
   window.addEventListener('scroll', updateHeaderState, { passive: true })
+  window.addEventListener('keydown', handleGlobalKeydown)
   nextTick(() => {
     if (!timelineElement.value || !('IntersectionObserver' in window)) { timelineRevealed.value = true; return }
     timelineObserver = new IntersectionObserver(([entry]) => {
@@ -129,6 +130,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateHeaderState)
+  window.removeEventListener('keydown', handleGlobalKeydown)
   timelineObserver?.disconnect()
 })
 
@@ -186,6 +188,9 @@ function addMockMedia() {
 }
 function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = false; requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })) }
 function updateHeaderState() { headerScrolled.value = window.scrollY > 42 }
+function handleGlobalKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' && selectedEntry.value) selectedEntry.value = null
+}
 function moveHero(event: PointerEvent) {
   if (event.pointerType === 'touch') return
   const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect()
