@@ -548,7 +548,14 @@ img { display: block; max-width: 100%; }
   box-shadow: 0 0 0 1px rgba(255, 255, 255, .36);
   cursor: help;
   outline: 0;
-  transition: transform .18s ease, box-shadow .18s ease;
+  transition: transform .14s ease, box-shadow .14s ease;
+}
+
+.route-line > .route-stop::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
 }
 
 .route-line > .route-stop:first-child { background: var(--accent); }
@@ -557,7 +564,7 @@ img { display: block; max-width: 100%; }
 .route-tip {
   position: absolute;
   left: 50%;
-  bottom: 30px;
+  bottom: 22px;
   z-index: 4;
   width: max-content;
   max-width: 190px;
@@ -570,9 +577,9 @@ img { display: block; max-width: 100%; }
   color: #fffef9;
   box-shadow: 0 10px 24px rgba(0, 0, 0, .2);
   opacity: 0;
-  pointer-events: none;
+  pointer-events: auto;
   transform: translate(-50%, 5px);
-  transition: opacity .18s ease, transform .18s ease;
+  transition: opacity .12s ease, transform .12s ease;
   backdrop-filter: blur(14px) saturate(1.2);
 }
 
