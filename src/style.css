@@ -119,6 +119,8 @@ img { display: block; max-width: 100%; }
 
 .app-shell > .site-header {
   position: fixed;
+  inset: 0 0 auto;
+  width: 100%;
   margin-bottom: 0;
   z-index: 100;
 }
@@ -1163,6 +1165,12 @@ img { display: block; max-width: 100%; }
   padding: 4vw;
   background: rgba(9, 11, 13, .66);
   backdrop-filter: blur(8px);
+}
+
+.app-shell > .detail-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
 }
 
 .detail-modal {
