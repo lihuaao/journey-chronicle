@@ -502,7 +502,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
         </div>
       </section>
 
-      <section id="about" data-nav-section class="brief-band">
+      <section id="about" data-nav-section class="brief-band" :style="{ '--brief-image': `url(${heroCoverImage})` }">
         <div class="page-width brief-grid">
           <article class="brief-story">
             <span class="section-index">01 / ABOUT THE ARCHIVE</span>
