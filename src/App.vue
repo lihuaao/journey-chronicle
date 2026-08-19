@@ -95,6 +95,60 @@ const seedEntries: Entry[] = [
   { id: 5, year: '2021', date: '2021.04 — 2021.09', category: 'LIFE', title: '在城市里找到水面', place: '上海 · 苏州河', summary: '把日常散步变成一份关于城市边缘的生活档案。', body: '没有明确的项目目标，只是每周沿着河走一段，拍下桥下的光、钓鱼的人和慢慢变化的岸线。', tags: '生活, 观察, 城市', image: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1200&q=85', images: ['https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1600&q=85', 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1600&q=85', 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=85'], metric: '42 walks' },
 ]
 
+const mockRouteSeeds = [
+  { title: '在雾岭醒来', place: '云南 · 高黎贡', category: 'LIFE' as EntryCategory },
+  { title: '沿海岸线慢下来', place: '福建 · 东山岛', category: 'PROJECT' as EntryCategory },
+  { title: '把风装进背包', place: '甘肃 · 河西走廊', category: 'WORK' as EntryCategory },
+  { title: '在旧城寻找光', place: '四川 · 康定', category: 'LEARNING' as EntryCategory },
+  { title: '一条河的下午', place: '广西 · 漓江', category: 'LIFE' as EntryCategory },
+  { title: '去看没有名字的湖', place: '青海 · 柴达木', category: 'NOW' as EntryCategory },
+  { title: '穿过风的方向', place: '新疆 · 伊犁', category: 'PROJECT' as EntryCategory },
+  { title: '为冬天留一卷胶片', place: '吉林 · 长白山', category: 'WORK' as EntryCategory },
+  { title: '把城市放在身后', place: '贵州 · 黔东南', category: 'LEARNING' as EntryCategory },
+  { title: '在潮汐之间散步', place: '浙江 · 舟山', category: 'LIFE' as EntryCategory },
+  { title: '雨季里的短暂停留', place: '云南 · 大理', category: 'NOW' as EntryCategory },
+  { title: '寻找山脊的回声', place: '西藏 · 林芝', category: 'PROJECT' as EntryCategory },
+]
+const mockImageSeeds = [
+  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=85',
+  'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=85',
+  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=85',
+  'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1600&q=85',
+  'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=85',
+  'https://images.unsplash.com/photo-1483347756197-71ef80e95f73?auto=format&fit=crop&w=1600&q=85',
+  'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=1600&q=85',
+  'https://images.unsplash.com/photo-1497250681960-ef046c08a56e?auto=format&fit=crop&w=1600&q=85',
+  'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1600&q=85',
+  'https://images.unsplash.com/photo-1464278533981-50106e6176b1?auto=format&fit=crop&w=1600&q=85',
+  'https://images.unsplash.com/photo-1502744688674-c619d1586c9e?auto=format&fit=crop&w=1600&q=85',
+  'https://images.unsplash.com/photo-1486911278844-a81c5267e227?auto=format&fit=crop&w=1600&q=85',
+]
+const mockSeasons = ['初春', '梅雨', '盛夏', '晚秋', '初雪', '清晨']
+const mockActions = ['记录风向', '收集一段光', '沿着水面行走', '等待天气转晴', '把速度放慢', '重新认识距离']
+const generatedEntries: Entry[] = Array.from({ length: 72 }, (_, index) => {
+  const route = mockRouteSeeds[index % mockRouteSeeds.length]
+  const season = mockSeasons[index % mockSeasons.length]
+  const image = mockImageSeeds[index % mockImageSeeds.length]
+  const images = [0, 1, 2].map(offset => mockImageSeeds[(index + offset * 3) % mockImageSeeds.length])
+  const year = String(2024 - Math.floor(index / 12))
+  const sequence = String(index + 6).padStart(2, '0')
+  return {
+    id: index + 6,
+    year,
+    date: `${year}.${String((index % 9) + 1).padStart(2, '0')} — ${year}.${String(((index + 2) % 9) + 1).padStart(2, '0')}`,
+    category: route.category,
+    title: `${sequence} · ${route.title}`,
+    place: route.place,
+    summary: `${season}里，${mockActions[index % mockActions.length]}，让这一次经过留下更清晰的形状。`,
+    body: `第 ${sequence} 号记录发生在${route.place}。这次没有预设答案，只沿着天气、地形和偶遇的节奏前进，最后把${season}的片段整理成一页可以回看的档案。`,
+    tags: `${route.category === 'LIFE' ? '生活' : '旅程'}, ${season}, field note ${sequence}`,
+    image,
+    images,
+    metric: `${String(12 + (index * 7) % 240)} km / ${String(1 + index % 6).padStart(2, '0')} days`,
+  }
+})
+const allSeedEntries: Entry[] = [...seedEntries, ...generatedEntries]
+
 const seedMedia: MediaAsset[] = [
   { id: 1, name: 'southwest-dawn.jpg', type: 'IMAGE', size: '2.4 MB', date: '2025.02.18', url: 'https://images.unsplash.com/photo-1464278533981-50106e6176b1?auto=format&fit=crop&w=1200&q=85', entryId: 1 },
   { id: 2, name: 'qiantang-ride.jpg', type: 'IMAGE', size: '1.8 MB', date: '2024.11.03', url: 'https://images.unsplash.com/photo-1502744688674-c619d1586c9e?auto=format&fit=crop&w=1200&q=85', entryId: 2 },
@@ -160,7 +214,7 @@ onMounted(() => {
     }
     if (!timelineElement.value || !('IntersectionObserver' in window)) {
       timelineInView.value = true
-      visibleTimelineEntries.value = new Set(entries.value.map(entry => entry.id))
+      visibleTimelineEntries.value = new Set(latestEntries.value.map(entry => entry.id))
       syncTimelineRotation()
       return
     }
@@ -171,13 +225,17 @@ onMounted(() => {
     timelineObserver.observe(timelineElement.value)
     timelineEntryObserver = new IntersectionObserver((observedEntries) => {
       observedEntries.forEach((entry) => {
-        if (!entry.isIntersecting) return
         const target = entry.target as HTMLElement
         const id = Number(target.dataset.traceId)
         const index = Number(target.dataset.traceIndex)
-        visibleTimelineEntries.value = new Set([...visibleTimelineEntries.value, id])
-        setActiveTimelineEntry(index)
-        timelineEntryObserver?.unobserve(target)
+        const next = new Set(visibleTimelineEntries.value)
+        if (entry.isIntersecting) {
+          next.add(id)
+          setActiveTimelineEntry(index)
+        } else {
+          next.delete(id)
+        }
+        visibleTimelineEntries.value = next
       })
     }, { threshold: .28, rootMargin: '0px 0px -10% 0px' })
     document.querySelectorAll<HTMLElement>('[data-trace-id]').forEach(entry => timelineEntryObserver?.observe(entry))
@@ -200,9 +258,11 @@ onBeforeUnmount(() => {
 
 const interestList = computed(() => profile.value.interests.split(',').map(item => item.trim()).filter(Boolean))
 const sortedEntries = computed(() => [...entries.value].sort((a, b) => b.year.localeCompare(a.year)))
-const featuredEntries = computed(() => {
+const latestEntries = computed(() => sortedEntries.value.slice(0, 9))
+const latestEntryIds = computed(() => new Set(latestEntries.value.map(item => item.id)))
+const archiveEntries = computed(() => {
   const source = activeCategory.value === 'ALL' ? sortedEntries.value : sortedEntries.value.filter(item => item.category === activeCategory.value)
-  return source.slice(0, 4)
+  return source.filter(item => !latestEntryIds.value.has(item.id))
 })
 const backgroundCandidates = computed(() => [...new Set(sortedEntries.value.flatMap(entry => entry.images))])
 const selectedBackgroundImages = computed(() => {
@@ -211,7 +271,7 @@ const selectedBackgroundImages = computed(() => {
 })
 const ambientImage = computed(() => selectedBackgroundImages.value[ambientImageIndex.value % Math.max(selectedBackgroundImages.value.length, 1)] || profile.value.avatar)
 const heroCoverImage = computed(() => visualSettings.value.coverImage || profile.value.avatar)
-const activeTimelineEntry = computed(() => sortedEntries.value[activeTimelineIndex.value % Math.max(sortedEntries.value.length, 1)] ?? seedEntries[0])
+const activeTimelineEntry = computed(() => latestEntries.value[activeTimelineIndex.value % Math.max(latestEntries.value.length, 1)] ?? seedEntries[0])
 const timelineBackground = computed(() => activeTimelineEntry.value.images[activeTimelineImageIndex.value % activeTimelineEntry.value.images.length] ?? activeTimelineEntry.value.image)
 const detailImage = computed(() => {
   const entry = selectedEntry.value
@@ -224,18 +284,20 @@ function normalizeCategory(value: string | undefined): EntryCategory {
   return categoryOptions.includes(value as EntryCategory) ? value as EntryCategory : 'PROJECT'
 }
 function normalizeEntry(item: Partial<Entry>): Entry {
-  const image = item.image || seedEntries[0].image
+  const image = item.image || allSeedEntries[0].image
   const suppliedImages = item.images?.filter(Boolean)
   const images = suppliedImages?.length ? suppliedImages : [image]
   return { ...seedEntries[0], ...item, image, images, id: Number(item.id || Date.now()), category: normalizeCategory(item.category) }
 }
 function hydrateEntries(stored: Array<Partial<Entry>> | null): Entry[] {
-  if (!stored) return seedEntries
-  const fixtures = new Map(seedEntries.map(entry => [entry.id, entry]))
-  return stored.map((entry) => {
+  if (!stored) return allSeedEntries
+  const fixtures = new Map(allSeedEntries.map(entry => [entry.id, entry]))
+  const hydrated = stored.map((entry) => {
     const fixture = fixtures.get(Number(entry.id))
     return normalizeEntry({ ...fixture, ...entry, images: entry.images?.length ? entry.images : fixture?.images })
   })
+  const existingIds = new Set(hydrated.map(entry => entry.id))
+  return [...hydrated, ...allSeedEntries.filter(entry => !existingIds.has(entry.id))]
 }
 function hydrateMediaAssets(stored: MediaAsset[] | null): MediaAsset[] {
   if (!stored) return seedMedia
@@ -262,6 +324,10 @@ function setTheme(theme: ThemeKey) {
   localStorage.setItem('fieldnote-profile', JSON.stringify(profile.value))
 }
 function setActiveCategory(category: 'ALL' | EntryCategory) { activeCategory.value = category }
+function openEntry(item: Entry, index?: number) {
+  if (typeof index === 'number') setActiveTimelineEntry(index)
+  selectedEntry.value = item
+}
 function resetEntry() {
   editingId.value = null
   entryForm.value = { ...seedEntries[0], images: [], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' }
@@ -446,7 +512,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
                   <span class="route-tip"><b>{{ item.year }}</b><strong>{{ item.category }} / {{ item.title }}</strong></span>
                 </span>
               </div>
-              <button v-if="sortedEntries[0]" class="route-current" @click="selectedEntry = sortedEntries[0]">
+              <button v-if="sortedEntries[0]" class="route-current" @click="openEntry(sortedEntries[0])">
                 <span>{{ sortedEntries[0].category }}</span>
                 <strong>{{ sortedEntries[0].title }}</strong>
                 <small><MapPin :size="12" /> {{ sortedEntries[0].place }}</small>
@@ -482,7 +548,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
           </div>
         </div>
         <div class="page-width route-index" aria-label="旅程路线目录">
-          <button v-for="(item, index) in sortedEntries.slice(0, 4)" :key="item.id" class="route-index-item" @click="selectedEntry = item">
+          <button v-for="(item, index) in sortedEntries.slice(0, 4)" :key="item.id" class="route-index-item" @click="openEntry(item)">
             <span>0{{ index + 1 }}</span>
             <strong>{{ item.title }}</strong>
             <small><MapPin :size="13" /> {{ item.place }}</small>
@@ -504,7 +570,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
           </div>
         </div>
         <div class="trace-list">
-          <article v-for="(item, index) in sortedEntries" :key="item.id" class="trace-item" :class="{ 'is-active': activeTimelineIndex === index, 'is-visible': visibleTimelineEntries.has(item.id) }" :data-trace-id="item.id" :data-trace-index="index" @click="setActiveTimelineEntry(index); selectedEntry = item">
+          <article v-for="(item, index) in latestEntries" :key="item.id" class="trace-item" :class="{ 'is-active': activeTimelineIndex === index, 'is-visible': visibleTimelineEntries.has(item.id) }" :data-trace-id="item.id" :data-trace-index="index" @click="openEntry(item, index)">
             <time>{{ item.year }}</time>
             <div class="trace-card">
               <div class="trace-copy">
@@ -537,8 +603,8 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
         <div class="work-filters">
           <button v-for="category in publicCategories" :key="category" :class="{ active: activeCategory === category }" @click="setActiveCategory(category)">{{ category }}</button>
         </div>
-        <div v-if="featuredEntries.length" class="work-grid">
-          <article v-for="(item, index) in featuredEntries" :key="item.id" class="work-card" :class="{ featured: index === 0 }" @click="selectedEntry = item">
+        <div v-if="archiveEntries.length" class="work-grid">
+          <article v-for="(item, index) in [...archiveEntries, ...archiveEntries]" :key="`${item.id}-${index}`" class="work-card" @click="openEntry(item)">
             <img :src="item.image" :alt="item.title" />
             <div class="work-overlay">
               <span>{{ item.metric }}</span>
@@ -548,7 +614,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
             <div class="work-corner"><ExternalLink :size="15" /></div>
           </article>
         </div>
-        <div v-else class="work-empty">这个分类还没有内容，去后台添加第一个节点。</div>
+        <div v-else class="work-empty">这个分类暂时没有更多归档内容。</div>
       </section>
 
       <section class="contact-section page-width">
