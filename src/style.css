@@ -1168,19 +1168,29 @@ img { display: block; max-width: 100%; }
 .detail-modal {
   position: relative;
   width: min(900px, 100%);
-  max-height: min(760px, 92vh);
+  height: min(760px, calc(100vh - 48px));
+  min-height: 0;
   display: grid;
   grid-template-columns: 42% 58%;
-  overflow: auto;
+  overflow: hidden;
   border-radius: 8px;
   background: var(--panel);
   box-shadow: 0 26px 80px rgba(0, 0, 0, .35);
 }
 
-.detail-modal > img {
+.detail-media {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--ink);
+}
+
+.detail-media > img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
-  min-height: 460px;
   object-fit: cover;
 }
 
@@ -1197,6 +1207,9 @@ img { display: block; max-width: 100%; }
 }
 
 .modal-content {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
   padding: 54px 42px 40px;
 }
 
@@ -2102,11 +2115,12 @@ img { display: block; max-width: 100%; }
 
   .detail-modal {
     grid-template-columns: 1fr;
+    grid-template-rows: 230px minmax(0, 1fr);
+    height: min(760px, calc(100vh - 32px));
   }
 
-  .detail-modal > img {
-    height: 230px;
-    min-height: 0;
+  .detail-media {
+    min-height: 230px;
   }
 
   .modal-content {

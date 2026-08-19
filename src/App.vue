@@ -800,9 +800,11 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
     <div v-if="selectedEntry" class="detail-backdrop" @click.self="selectedEntry = null">
       <article class="detail-modal">
         <button class="modal-close icon-button" title="关闭详情" @click="selectedEntry = null"><X :size="17" /></button>
-        <Transition name="detail-image">
-          <img :key="detailImage" :src="detailImage" :alt="selectedEntry.title" />
-        </Transition>
+        <div class="detail-media">
+          <Transition name="detail-image" mode="out-in">
+            <img :key="detailImage" :src="detailImage" :alt="selectedEntry.title" />
+          </Transition>
+        </div>
         <div class="modal-content">
           <div class="trace-meta"><span>{{ selectedEntry.category }}</span><span>{{ selectedEntry.date }}</span></div>
           <h2>{{ selectedEntry.title }}</h2>
