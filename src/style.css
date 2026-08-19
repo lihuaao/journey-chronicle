@@ -846,16 +846,20 @@ img { display: block; max-width: 100%; }
   grid-column: 1;
   grid-row: 1;
   position: relative;
+  isolation: isolate;
   min-height: 252px;
-  display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
-  gap: 30px;
-  padding: 18px;
+  display: flex;
+  align-items: center;
+  padding: 28px;
   border: 1px solid var(--line);
   border-left: 3px solid var(--trace-accent);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--panel) 88%, transparent);
-  transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
+  background-color: var(--ink);
+  background-image: linear-gradient(100deg, rgba(9, 17, 13, .88) 0%, rgba(9, 17, 13, .74) 50%, rgba(9, 17, 13, .38) 100%), var(--trace-image);
+  background-position: center;
+  background-size: cover;
+  color: #fffef9;
+  transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease, background-position .7s cubic-bezier(.2, .72, .2, 1);
 }
 
 .trace-card::before {
@@ -894,50 +898,15 @@ img { display: block; max-width: 100%; }
 
 .trace-copy {
   min-width: 0;
+  max-width: 470px;
   align-self: center;
   padding: 8px 42px 8px 6px;
-}
-
-.trace-media {
   position: relative;
-  min-height: 214px;
-  overflow: hidden;
-  border-radius: 4px;
-  background-color: var(--ink);
-  background-image: var(--trace-image);
-  background-position: center;
-  background-size: cover;
-  transition: background-position .7s cubic-bezier(.2, .72, .2, 1), filter .35s ease;
-  contain: paint;
-}
-
-.trace-media::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg, rgba(10, 16, 12, .3), rgba(10, 16, 12, .08) 68%, rgba(10, 16, 12, .16));
-}
-
-.trace-media span {
-  position: absolute;
   z-index: 1;
-  left: 12px;
-  bottom: 11px;
-  padding: 5px 7px;
-  border: 1px solid rgba(255, 255, 255, .4);
-  border-radius: 3px;
-  background: rgba(14, 22, 17, .24);
-  color: #fffef9;
-  font: 500 9px var(--mono);
-  opacity: 1;
-  transform: none;
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .trace-item:hover .trace-media {
-    background-position: 54% center;
-    filter: saturate(1.08);
-  }
+  .trace-item:hover .trace-card { background-position: 54% center; }
 }
 
 .trace-meta {
@@ -948,7 +917,7 @@ img { display: block; max-width: 100%; }
 }
 
 .trace-meta span:last-child {
-  color: var(--muted);
+  color: rgba(255, 255, 255, .72);
 }
 
 .trace-card h3,
@@ -966,6 +935,7 @@ img { display: block; max-width: 100%; }
   margin-bottom: 9px;
   font-family: 'Noto Serif SC', serif;
   font-weight: 600;
+  color: #fffef9;
 }
 
 .trace-place {
@@ -974,7 +944,7 @@ img { display: block; max-width: 100%; }
 }
 
 .trace-card p:not(.trace-place) {
-  color: var(--muted);
+  color: rgba(255, 255, 255, .82);
   font-size: 14px;
   line-height: 1.7;
   margin: 0 0 18px;
@@ -993,6 +963,14 @@ img { display: block; max-width: 100%; }
   color: var(--muted);
   padding: 5px 8px;
   font-size: 10px;
+}
+
+.trace-card .trace-place { color: rgba(255, 255, 255, .76); }
+
+.trace-card .mini-tags span {
+  border-color: rgba(255, 255, 255, .28);
+  background: rgba(255, 255, 255, .1);
+  color: rgba(255, 255, 255, .82);
 }
 
 .round-arrow {
@@ -1547,6 +1525,13 @@ img { display: block; max-width: 100%; }
   line-height: 1.6;
 }
 
+.editor-grid .field-note {
+  color: var(--accent-2);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
 .editor-grid input:focus,
 .editor-grid textarea:focus,
 .editor-grid select:focus,
@@ -2093,12 +2078,7 @@ img { display: block; max-width: 100%; }
     font-size: 18px;
   }
 
-  .trace-card {
-    grid-template-columns: 1fr;
-    gap: 18px;
-    min-height: 0;
-    grid-column: auto;
-  }
+  .trace-card { min-height: 0; grid-column: auto; }
 
   .trace-card::before {
     left: -22px;
@@ -2109,10 +2089,6 @@ img { display: block; max-width: 100%; }
 
   .trace-copy {
     padding-right: 42px;
-  }
-
-  .trace-media {
-    min-height: 190px;
   }
 
   .work-card {

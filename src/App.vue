@@ -272,7 +272,7 @@ const selectedBackgroundImages = computed(() => {
 const ambientImage = computed(() => selectedBackgroundImages.value[ambientImageIndex.value % Math.max(selectedBackgroundImages.value.length, 1)] || profile.value.avatar)
 const heroCoverImage = computed(() => visualSettings.value.coverImage || profile.value.avatar)
 const activeTimelineEntry = computed(() => latestEntries.value[activeTimelineIndex.value % Math.max(latestEntries.value.length, 1)] ?? seedEntries[0])
-const timelineBackground = computed(() => activeTimelineEntry.value.images[activeTimelineImageIndex.value % activeTimelineEntry.value.images.length] ?? activeTimelineEntry.value.image)
+const timelineBackground = computed(() => timelineImage(activeTimelineEntry.value, activeTimelineImageIndex.value))
 const detailImage = computed(() => {
   const entry = selectedEntry.value
   return entry?.images[activeDetailImageIndex.value % entry.images.length] ?? entry?.image ?? ''
@@ -282,6 +282,17 @@ function normalizeCategory(value: string | undefined): EntryCategory {
   if (value === 'CURRENTLY') return 'NOW'
   if (value === 'SERIES') return 'WORK'
   return categoryOptions.includes(value as EntryCategory) ? value as EntryCategory : 'PROJECT'
+}
+function timelineImage(entry: Entry, imageIndex = 0) {
+  const image = entry.images[imageIndex % Math.max(entry.images.length, 1)] ?? entry.image
+  if (!image.includes('images.unsplash.com')) return image
+  const url = new URL(image)
+  url.searchParams.set('auto', 'format')
+  url.searchParams.set('fit', 'crop')
+  url.searchParams.set('w', '1600')
+  url.searchParams.set('h', '900')
+  url.searchParams.set('q', '85')
+  return url.toString()
 }
 function normalizeEntry(item: Partial<Entry>): Entry {
   const image = item.image || allSeedEntries[0].image
@@ -572,7 +583,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
         <div class="trace-list">
           <article v-for="(item, index) in latestEntries" :key="item.id" class="trace-item" :class="{ 'is-active': activeTimelineIndex === index, 'is-visible': visibleTimelineEntries.has(item.id) }" :data-trace-id="item.id" :data-trace-index="index" @click="openEntry(item, index)">
             <time>{{ item.year }}</time>
-            <div class="trace-card">
+            <div class="trace-card" :style="{ '--trace-image': `url(${timelineImage(item)})` }">
               <div class="trace-copy">
                 <div class="trace-meta"><span>{{ item.category }}</span><span>{{ item.date }}</span></div>
                 <h3>{{ item.title }}</h3>
@@ -581,9 +592,6 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
                 <div class="mini-tags">
                   <span v-for="tag in item.tags.split(',').slice(0, 3)" :key="tag">{{ tag.trim() }}</span>
                 </div>
-              </div>
-              <div class="trace-media" :style="{ '--trace-image': `url(${item.images[0] || item.image})` }" aria-hidden="true">
-                <span>IMAGE PLAYBACK</span>
               </div>
               <button class="round-arrow" title="查看详情"><ArrowUpRight :size="17" /></button>
             </div>
@@ -722,7 +730,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
               <label class="wide">详细介绍<textarea v-model="entryForm.body" rows="5" /></label>
               <label class="wide">标签（用逗号分隔）<input v-model="entryForm.tags" placeholder="摄影, 纪实, 长期项目" /></label>
               <label class="wide">封面图片地址<input v-model="entryForm.image" placeholder="https://..." /></label>
-              <label class="wide">图片集地址（用逗号分隔）<textarea :value="entryForm.images.join(', ')" rows="3" placeholder="https://..., https://..., https://..." @input="setEntryImages(($event.target as HTMLTextAreaElement).value)" /></label>
+              <label class="wide">图片集地址（用逗号分隔）<small class="field-note">时间线卡片会整图铺底，建议使用 16:9 横屏图片，否则主体可能被裁切。</small><textarea :value="entryForm.images.join(', ')" rows="3" placeholder="https://..., https://..., https://..." @input="setEntryImages(($event.target as HTMLTextAreaElement).value)" /></label>
               <label>数据标记<input v-model="entryForm.metric" placeholder="312 km / 03 days" /></label>
             </div>
             <div class="editor-actions">
