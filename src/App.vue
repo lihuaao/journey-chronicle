@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
   ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, Check, Compass, Edit3,
   ExternalLink, Eye, Image, LayoutDashboard, LogIn, LogOut, Mail, MapPin,
@@ -99,6 +99,7 @@ const selectedEntry = ref<Entry | null>(null)
 const editingId = ref<number | null>(null)
 const mobileOpen = ref(false)
 const heroTilt = ref({ x: 0, y: 0 })
+const headerScrolled = ref(false)
 const profileForm = ref<Profile>({ ...seedProfile })
 const entryForm = ref<Entry>({ ...seedEntries[0], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' })
 
@@ -110,7 +111,11 @@ onMounted(() => {
   mediaAssets.value = JSON.parse(localStorage.getItem('fieldnote-media') || JSON.stringify(seedMedia)) as MediaAsset[]
   profileForm.value = { ...profile.value }
   if (window.location.hash === '#/admin') activeView.value = 'admin'
+  updateHeaderState()
+  window.addEventListener('scroll', updateHeaderState, { passive: true })
 })
+
+onBeforeUnmount(() => window.removeEventListener('scroll', updateHeaderState))
 
 const interestList = computed(() => profile.value.interests.split(',').map(item => item.trim()).filter(Boolean))
 const sortedEntries = computed(() => [...entries.value].sort((a, b) => b.year.localeCompare(a.year)))
@@ -165,6 +170,7 @@ function addMockMedia() {
   adminNotice.value = '已添加一条 mock 媒体资源'
 }
 function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = false; requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })) }
+function updateHeaderState() { headerScrolled.value = window.scrollY > 42 }
 function moveHero(event: PointerEvent) {
   if (event.pointerType === 'touch') return
   const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect()
@@ -178,7 +184,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
 
 <template>
   <div class="app-shell" :class="`theme-${profile.theme}`">
-    <header v-if="activeView === 'public'" class="site-header">
+    <header v-if="activeView === 'public'" class="site-header" :class="{ 'is-scrolled': headerScrolled }">
       <button class="wordmark" @click="openPublic">
         <span class="wordmark-mark"><Compass :size="15" /></span>
         <span>JOURNEY CHRONICLE</span>
@@ -282,7 +288,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
           </div>
         </div>
         <div class="trace-list">
-          <article v-for="item in sortedEntries" :key="item.id" class="trace-item" @click="selectedEntry = item">
+          <article v-for="(item, index) in sortedEntries" :key="item.id" class="trace-item" :class="{ 'is-alternate': index % 2 === 1 }" @click="selectedEntry = item">
             <time>{{ item.year }}</time>
             <div class="trace-card">
               <div class="trace-copy">
@@ -294,7 +300,10 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
                   <span v-for="tag in item.tags.split(',').slice(0, 3)" :key="tag">{{ tag.trim() }}</span>
                 </div>
               </div>
-              <img :src="item.image" :alt="item.title" />
+              <div class="trace-media" aria-hidden="true">
+                <img :src="item.image" :alt="item.title" />
+                <span>IMAGE PLAYBACK</span>
+              </div>
               <button class="round-arrow" title="查看详情"><ArrowUpRight :size="17" /></button>
             </div>
           </article>
