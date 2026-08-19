@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
   ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, Check, Compass, Edit3,
   ExternalLink, Eye, Image, LayoutDashboard, LogIn, LogOut, Mail, MapPin,
@@ -100,8 +100,11 @@ const editingId = ref<number | null>(null)
 const mobileOpen = ref(false)
 const heroTilt = ref({ x: 0, y: 0 })
 const headerScrolled = ref(false)
+const timelineElement = ref<HTMLElement | null>(null)
+const timelineRevealed = ref(false)
 const profileForm = ref<Profile>({ ...seedProfile })
 const entryForm = ref<Entry>({ ...seedEntries[0], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' })
+let timelineObserver: IntersectionObserver | undefined
 
 onMounted(() => {
   const storedProfile = JSON.parse(localStorage.getItem('fieldnote-profile') || 'null') as Partial<Profile> | null
@@ -113,9 +116,21 @@ onMounted(() => {
   if (window.location.hash === '#/admin') activeView.value = 'admin'
   updateHeaderState()
   window.addEventListener('scroll', updateHeaderState, { passive: true })
+  nextTick(() => {
+    if (!timelineElement.value || !('IntersectionObserver' in window)) { timelineRevealed.value = true; return }
+    timelineObserver = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return
+      timelineRevealed.value = true
+      timelineObserver?.disconnect()
+    }, { threshold: .18 })
+    timelineObserver.observe(timelineElement.value)
+  })
 })
 
-onBeforeUnmount(() => window.removeEventListener('scroll', updateHeaderState))
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', updateHeaderState)
+  timelineObserver?.disconnect()
+})
 
 const interestList = computed(() => profile.value.interests.split(',').map(item => item.trim()).filter(Boolean))
 const sortedEntries = computed(() => [...entries.value].sort((a, b) => b.year.localeCompare(a.year)))
@@ -279,7 +294,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
         </div>
       </section>
 
-      <section id="timeline" class="timeline-section page-width">
+      <section id="timeline" ref="timelineElement" class="timeline-section page-width" :class="{ 'is-revealed': timelineRevealed }">
         <div class="section-heading">
           <span class="section-index">02 / ROUTE</span>
           <div>
@@ -288,7 +303,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
           </div>
         </div>
         <div class="trace-list">
-          <article v-for="(item, index) in sortedEntries" :key="item.id" class="trace-item" :class="{ 'is-alternate': index % 2 === 1 }" @click="selectedEntry = item">
+          <article v-for="(item, index) in sortedEntries" :key="item.id" class="trace-item" :style="{ '--entry-delay': `${index * 100}ms` }" @click="selectedEntry = item">
             <time>{{ item.year }}</time>
             <div class="trace-card">
               <div class="trace-copy">
