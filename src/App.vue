@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, Check, Compass, Edit3,
   ExternalLink, Eye, Image, LayoutDashboard, LogIn, LogOut, Mail, MapPin,
@@ -36,6 +36,7 @@ type Entry = {
   body: string
   tags: string
   image: string
+  images: string[]
   metric: string
 }
 
@@ -73,11 +74,11 @@ const seedProfile: Profile = {
 }
 
 const seedEntries: Entry[] = [
-  { id: 1, year: '2025', date: '2025.02 — 至今', category: 'NOW', title: '把生活搬到户外', place: '中国 · 西南线', summary: '一边工作，一边把更多时间还给山、河流和清晨。', body: '正在整理一份关于西南山地的长期影像计划。它不追求打卡，而是记录人在自然里如何改变速度、距离和判断。', tags: '长期项目, 影像计划', image: 'https://images.unsplash.com/photo-1464278533981-50106e6176b1?auto=format&fit=crop&w=1200&q=85', metric: '01 / ongoing' },
-  { id: 2, year: '2024', date: '2024.09 — 2024.11', category: 'PROJECT', title: '沿江骑行 312 公里', place: '浙江 · 钱塘江', summary: '用三天时间，从潮汐、桥和路边小店重新认识一条江。', body: '路线从上游开始，尽量避开快速路。每天只设一个目的地，剩下的时间留给天气、偶遇和拍摄。', tags: '骑行, 纪实, 312 km', image: 'https://images.unsplash.com/photo-1502744688674-c619d1586c9e?auto=format&fit=crop&w=1200&q=85', metric: '312 km / 03 days' },
-  { id: 3, year: '2023', date: '2023.12 — 2024.01', category: 'WORK', title: '雪线之上的 17 个清晨', place: '北海道 · 日本', summary: '在雪落下来之前，记录山脊上的蓝色时刻。', body: '这一组照片拍摄于清晨五点到七点之间。低温、风向和能见度共同决定了每一张照片的构图。', tags: '摄影, 雪山, 17 frames', image: 'https://images.unsplash.com/photo-1486911278844-a81c5267e227?auto=format&fit=crop&w=1200&q=85', metric: '17 frames / film' },
-  { id: 4, year: '2022', date: '2022.05 — 2022.10', category: 'LEARNING', title: '开始认真观察世界', place: '上海 · 日常半径', summary: '从一台相机和一张空白地图开始，建立自己的观察习惯。', body: '摄影不是目的，注意力才是。那一年我开始记录每天经过的街道、光线和陌生人的动作。', tags: '摄影, 观察, 练习', image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=85', metric: '100+ walks' },
-  { id: 5, year: '2021', date: '2021.04 — 2021.09', category: 'LIFE', title: '在城市里找到水面', place: '上海 · 苏州河', summary: '把日常散步变成一份关于城市边缘的生活档案。', body: '没有明确的项目目标，只是每周沿着河走一段，拍下桥下的光、钓鱼的人和慢慢变化的岸线。', tags: '生活, 观察, 城市', image: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1200&q=85', metric: '42 walks' },
+  { id: 1, year: '2025', date: '2025.02 — 至今', category: 'NOW', title: '把生活搬到户外', place: '中国 · 西南线', summary: '一边工作，一边把更多时间还给山、河流和清晨。', body: '正在整理一份关于西南山地的长期影像计划。它不追求打卡，而是记录人在自然里如何改变速度、距离和判断。', tags: '长期项目, 影像计划', image: 'https://images.unsplash.com/photo-1464278533981-50106e6176b1?auto=format&fit=crop&w=1200&q=85', images: ['https://images.unsplash.com/photo-1464278533981-50106e6176b1?auto=format&fit=crop&w=1600&q=85', 'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1600&q=85', 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=85', 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=85'], metric: '01 / ongoing' },
+  { id: 2, year: '2024', date: '2024.09 — 2024.11', category: 'PROJECT', title: '沿江骑行 312 公里', place: '浙江 · 钱塘江', summary: '用三天时间，从潮汐、桥和路边小店重新认识一条江。', body: '路线从上游开始，尽量避开快速路。每天只设一个目的地，剩下的时间留给天气、偶遇和拍摄。', tags: '骑行, 纪实, 312 km', image: 'https://images.unsplash.com/photo-1502744688674-c619d1586c9e?auto=format&fit=crop&w=1200&q=85', images: ['https://images.unsplash.com/photo-1502744688674-c619d1586c9e?auto=format&fit=crop&w=1600&q=85', 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=1600&q=85', 'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1600&q=85'], metric: '312 km / 03 days' },
+  { id: 3, year: '2023', date: '2023.12 — 2024.01', category: 'WORK', title: '雪线之上的 17 个清晨', place: '北海道 · 日本', summary: '在雪落下来之前，记录山脊上的蓝色时刻。', body: '这一组照片拍摄于清晨五点到七点之间。低温、风向和能见度共同决定了每一张照片的构图。', tags: '摄影, 雪山, 17 frames', image: 'https://images.unsplash.com/photo-1486911278844-a81c5267e227?auto=format&fit=crop&w=1200&q=85', images: ['https://images.unsplash.com/photo-1486911278844-a81c5267e227?auto=format&fit=crop&w=1600&q=85', 'https://images.unsplash.com/photo-1483347756197-71ef80e95f73?auto=format&fit=crop&w=1600&q=85', 'https://images.unsplash.com/photo-1497250681960-ef046c08a56e?auto=format&fit=crop&w=1600&q=85', 'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=1600&q=85'], metric: '17 frames / film' },
+  { id: 4, year: '2022', date: '2022.05 — 2022.10', category: 'LEARNING', title: '开始认真观察世界', place: '上海 · 日常半径', summary: '从一台相机和一张空白地图开始，建立自己的观察习惯。', body: '摄影不是目的，注意力才是。那一年我开始记录每天经过的街道、光线和陌生人的动作。', tags: '摄影, 观察, 练习', image: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1200&q=85', images: ['https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1600&q=85', 'https://images.unsplash.com/photo-1452780212940-6f5c0d14d848?auto=format&fit=crop&w=1600&q=85', 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=1600&q=85'], metric: '100+ walks' },
+  { id: 5, year: '2021', date: '2021.04 — 2021.09', category: 'LIFE', title: '在城市里找到水面', place: '上海 · 苏州河', summary: '把日常散步变成一份关于城市边缘的生活档案。', body: '没有明确的项目目标，只是每周沿着河走一段，拍下桥下的光、钓鱼的人和慢慢变化的岸线。', tags: '生活, 观察, 城市', image: 'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1200&q=85', images: ['https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=1600&q=85', 'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=1600&q=85', 'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1600&q=85'], metric: '42 walks' },
 ]
 
 const seedMedia: MediaAsset[] = [
@@ -103,20 +104,25 @@ const heroTilt = ref({ x: 0, y: 0 })
 const headerScrolled = ref(false)
 const activePublicSection = ref('home')
 const timelineElement = ref<HTMLElement | null>(null)
-const timelineRevealed = ref(false)
 const activeTimelineIndex = ref(0)
+const activeTimelineImageIndex = ref(0)
 const timelineInView = ref(false)
+const visibleTimelineEntries = ref(new Set<number>())
+const activeDetailImageIndex = ref(0)
 const profileForm = ref<Profile>({ ...seedProfile })
-const entryForm = ref<Entry>({ ...seedEntries[0], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' })
+const entryForm = ref<Entry>({ ...seedEntries[0], images: [], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' })
 let timelineObserver: IntersectionObserver | undefined
 let timelineRotationTimer: number | undefined
 let publicNavObserver: IntersectionObserver | undefined
+let timelineEntryObserver: IntersectionObserver | undefined
+let detailRotationTimer: number | undefined
 
 onMounted(() => {
   const storedProfile = JSON.parse(localStorage.getItem('fieldnote-profile') || 'null') as Partial<Profile> | null
   const storedEntries = JSON.parse(localStorage.getItem('fieldnote-entries') || 'null') as Array<Partial<Entry>> | null
   profile.value = { ...seedProfile, ...storedProfile, theme: storedProfile?.theme ?? seedProfile.theme }
-  entries.value = storedEntries ? storedEntries.map(normalizeEntry) : seedEntries
+  entries.value = hydrateEntries(storedEntries)
+  localStorage.setItem('fieldnote-entries', JSON.stringify(entries.value))
   const storedMedia = JSON.parse(localStorage.getItem('fieldnote-media') || 'null') as MediaAsset[] | null
   mediaAssets.value = hydrateMediaAssets(storedMedia)
   localStorage.setItem('fieldnote-media', JSON.stringify(mediaAssets.value))
@@ -134,28 +140,41 @@ onMounted(() => {
       document.querySelectorAll<HTMLElement>('[data-nav-section]').forEach(section => publicNavObserver?.observe(section))
     }
     if (!timelineElement.value || !('IntersectionObserver' in window)) {
-      timelineRevealed.value = true
       timelineInView.value = true
+      visibleTimelineEntries.value = new Set(entries.value.map(entry => entry.id))
       syncTimelineRotation()
       return
     }
     timelineObserver = new IntersectionObserver(([entry]) => {
       timelineInView.value = entry.isIntersecting
-      if (entry.isIntersecting) timelineRevealed.value = true
       syncTimelineRotation()
     }, { threshold: .18 })
     timelineObserver.observe(timelineElement.value)
+    timelineEntryObserver = new IntersectionObserver((observedEntries) => {
+      observedEntries.forEach((entry) => {
+        if (!entry.isIntersecting) return
+        const target = entry.target as HTMLElement
+        const id = Number(target.dataset.traceId)
+        const index = Number(target.dataset.traceIndex)
+        visibleTimelineEntries.value = new Set([...visibleTimelineEntries.value, id])
+        setActiveTimelineEntry(index)
+        timelineEntryObserver?.unobserve(target)
+      })
+    }, { threshold: .28, rootMargin: '0px 0px -10% 0px' })
+    document.querySelectorAll<HTMLElement>('[data-trace-id]').forEach(entry => timelineEntryObserver?.observe(entry))
   })
-  window.addEventListener('visibilitychange', syncTimelineRotation)
+  window.addEventListener('visibilitychange', syncMediaRotation)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateHeaderState)
   window.removeEventListener('keydown', handleGlobalKeydown)
   publicNavObserver?.disconnect()
-  window.removeEventListener('visibilitychange', syncTimelineRotation)
+  window.removeEventListener('visibilitychange', syncMediaRotation)
   timelineObserver?.disconnect()
+  timelineEntryObserver?.disconnect()
   stopTimelineRotation()
+  stopDetailRotation()
 })
 
 const interestList = computed(() => profile.value.interests.split(',').map(item => item.trim()).filter(Boolean))
@@ -164,7 +183,12 @@ const featuredEntries = computed(() => {
   const source = activeCategory.value === 'ALL' ? sortedEntries.value : sortedEntries.value.filter(item => item.category === activeCategory.value)
   return source.slice(0, 4)
 })
-const timelineBackground = computed(() => sortedEntries.value[activeTimelineIndex.value % Math.max(sortedEntries.value.length, 1)] ?? seedEntries[0])
+const activeTimelineEntry = computed(() => sortedEntries.value[activeTimelineIndex.value % Math.max(sortedEntries.value.length, 1)] ?? seedEntries[0])
+const timelineBackground = computed(() => activeTimelineEntry.value.images[activeTimelineImageIndex.value % activeTimelineEntry.value.images.length] ?? activeTimelineEntry.value.image)
+const detailImage = computed(() => {
+  const entry = selectedEntry.value
+  return entry?.images[activeDetailImageIndex.value % entry.images.length] ?? entry?.image ?? ''
+})
 
 function normalizeCategory(value: string | undefined): EntryCategory {
   if (value === 'CURRENTLY') return 'NOW'
@@ -172,7 +196,18 @@ function normalizeCategory(value: string | undefined): EntryCategory {
   return categoryOptions.includes(value as EntryCategory) ? value as EntryCategory : 'PROJECT'
 }
 function normalizeEntry(item: Partial<Entry>): Entry {
-  return { ...seedEntries[0], ...item, id: Number(item.id || Date.now()), category: normalizeCategory(item.category) }
+  const image = item.image || seedEntries[0].image
+  const suppliedImages = item.images?.filter(Boolean)
+  const images = suppliedImages?.length ? suppliedImages : [image]
+  return { ...seedEntries[0], ...item, image, images, id: Number(item.id || Date.now()), category: normalizeCategory(item.category) }
+}
+function hydrateEntries(stored: Array<Partial<Entry>> | null): Entry[] {
+  if (!stored) return seedEntries
+  const fixtures = new Map(seedEntries.map(entry => [entry.id, entry]))
+  return stored.map((entry) => {
+    const fixture = fixtures.get(Number(entry.id))
+    return normalizeEntry({ ...fixture, ...entry, images: entry.images?.length ? entry.images : fixture?.images })
+  })
 }
 function hydrateMediaAssets(stored: MediaAsset[] | null): MediaAsset[] {
   if (!stored) return seedMedia
@@ -197,14 +232,18 @@ function setTheme(theme: ThemeKey) {
 function setActiveCategory(category: 'ALL' | EntryCategory) { activeCategory.value = category }
 function resetEntry() {
   editingId.value = null
-  entryForm.value = { ...seedEntries[0], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' }
+  entryForm.value = { ...seedEntries[0], images: [], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' }
 }
 function editEntry(item: Entry) { editingId.value = item.id; entryForm.value = { ...item }; adminSection.value = 'entries'; window.scrollTo({ top: 0, behavior: 'smooth' }) }
 function saveEntry() {
   if (!entryForm.value.title || !entryForm.value.year || !entryForm.value.summary) return
-  const next = normalizeEntry({ ...entryForm.value, id: editingId.value || Date.now(), image: entryForm.value.image || seedEntries[0].image })
+  const firstGalleryImage = entryForm.value.images.find(Boolean)
+  const next = normalizeEntry({ ...entryForm.value, id: editingId.value || Date.now(), image: entryForm.value.image || firstGalleryImage || seedEntries[0].image })
   entries.value = editingId.value ? entries.value.map(item => item.id === editingId.value ? next : item) : [next, ...entries.value]
   localStorage.setItem('fieldnote-entries', JSON.stringify(entries.value)); resetEntry()
+}
+function setEntryImages(value: string) {
+  entryForm.value.images = value.split(',').map(image => image.trim()).filter(Boolean)
 }
 function deleteEntry(id: number) {
   entries.value = entries.value.filter(item => item.id !== id)
@@ -233,12 +272,39 @@ function stopTimelineRotation() {
 }
 function syncTimelineRotation() {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  if (!timelineInView.value || document.hidden || reducedMotion || sortedEntries.value.length < 2) { stopTimelineRotation(); return }
+  if (!timelineInView.value || document.hidden || reducedMotion || activeTimelineEntry.value.images.length < 2) { stopTimelineRotation(); return }
   if (timelineRotationTimer !== undefined) return
   timelineRotationTimer = window.setInterval(() => {
-    activeTimelineIndex.value = (activeTimelineIndex.value + 1) % sortedEntries.value.length
-  }, 6000)
+    activeTimelineImageIndex.value = (activeTimelineImageIndex.value + 1) % activeTimelineEntry.value.images.length
+  }, 5000)
 }
+function setActiveTimelineEntry(index: number) {
+  activeTimelineIndex.value = index
+  activeTimelineImageIndex.value = 0
+  stopTimelineRotation()
+  syncTimelineRotation()
+}
+function stopDetailRotation() {
+  if (detailRotationTimer === undefined) return
+  window.clearInterval(detailRotationTimer)
+  detailRotationTimer = undefined
+}
+function syncDetailRotation() {
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (!selectedEntry.value || document.hidden || reducedMotion || selectedEntry.value.images.length < 2) { stopDetailRotation(); return }
+  if (detailRotationTimer !== undefined) return
+  detailRotationTimer = window.setInterval(() => {
+    if (!selectedEntry.value) return
+    activeDetailImageIndex.value = (activeDetailImageIndex.value + 1) % selectedEntry.value.images.length
+  }, 4200)
+}
+function syncMediaRotation() { syncTimelineRotation(); syncDetailRotation() }
+
+watch(selectedEntry, () => {
+  activeDetailImageIndex.value = 0
+  stopDetailRotation()
+  syncDetailRotation()
+})
 function moveHero(event: PointerEvent) {
   if (event.pointerType === 'touch') return
   const bounds = (event.currentTarget as HTMLElement).getBoundingClientRect()
@@ -349,9 +415,9 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
         </div>
       </section>
 
-      <section id="timeline" ref="timelineElement" data-nav-section class="timeline-section page-width" :class="{ 'is-revealed': timelineRevealed }">
+      <section id="timeline" ref="timelineElement" data-nav-section class="timeline-section page-width">
         <Transition name="timeline-backdrop">
-          <div :key="timelineBackground.id" class="timeline-backdrop" :style="{ '--timeline-image': `url(${timelineBackground.image})` }" aria-hidden="true"></div>
+          <div :key="timelineBackground" class="timeline-backdrop" :style="{ '--timeline-image': `url(${timelineBackground})` }" aria-hidden="true"></div>
         </Transition>
         <div class="section-heading">
           <span class="section-index">02 / ROUTE</span>
@@ -361,7 +427,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
           </div>
         </div>
         <div class="trace-list">
-          <article v-for="(item, index) in sortedEntries" :key="item.id" class="trace-item" :class="{ 'is-active': activeTimelineIndex === index }" :style="{ '--entry-delay': `${index * 100}ms` }" @click="activeTimelineIndex = index; selectedEntry = item">
+          <article v-for="(item, index) in sortedEntries" :key="item.id" class="trace-item" :class="{ 'is-active': activeTimelineIndex === index, 'is-visible': visibleTimelineEntries.has(item.id) }" :data-trace-id="item.id" :data-trace-index="index" @click="setActiveTimelineEntry(index); selectedEntry = item">
             <time>{{ item.year }}</time>
             <div class="trace-card">
               <div class="trace-copy">
@@ -374,7 +440,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
                 </div>
               </div>
               <div class="trace-media" aria-hidden="true">
-                <img :src="item.image" :alt="item.title" />
+                <img :src="item.images[0] || item.image" :alt="item.title" />
                 <span>IMAGE PLAYBACK</span>
               </div>
               <button class="round-arrow" title="查看详情"><ArrowUpRight :size="17" /></button>
@@ -514,6 +580,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
               <label class="wide">详细介绍<textarea v-model="entryForm.body" rows="5" /></label>
               <label class="wide">标签（用逗号分隔）<input v-model="entryForm.tags" placeholder="摄影, 纪实, 长期项目" /></label>
               <label class="wide">封面图片地址<input v-model="entryForm.image" placeholder="https://..." /></label>
+              <label class="wide">图片集地址（用逗号分隔）<textarea :value="entryForm.images.join(', ')" rows="3" placeholder="https://..., https://..., https://..." @input="setEntryImages(($event.target as HTMLTextAreaElement).value)" /></label>
               <label>数据标记<input v-model="entryForm.metric" placeholder="312 km / 03 days" /></label>
             </div>
             <div class="editor-actions">
@@ -572,7 +639,9 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
     <div v-if="selectedEntry" class="detail-backdrop" @click.self="selectedEntry = null">
       <article class="detail-modal">
         <button class="modal-close icon-button" title="关闭详情" @click="selectedEntry = null"><X :size="17" /></button>
-        <img :src="selectedEntry.image" :alt="selectedEntry.title" />
+        <Transition name="detail-image">
+          <img :key="detailImage" :src="detailImage" :alt="selectedEntry.title" />
+        </Transition>
         <div class="modal-content">
           <div class="trace-meta"><span>{{ selectedEntry.category }}</span><span>{{ selectedEntry.date }}</span></div>
           <h2>{{ selectedEntry.title }}</h2>
