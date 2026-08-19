@@ -173,16 +173,12 @@ const headerScrolled = ref(false)
 const activePublicSection = ref('home')
 const timelineElement = ref<HTMLElement | null>(null)
 const activeTimelineIndex = ref(0)
-const activeTimelineImageIndex = ref(0)
-const timelineInView = ref(false)
 const visibleTimelineEntries = ref(new Set<number>())
 const activeDetailImageIndex = ref(0)
 const ambientImageIndex = ref(0)
 const profileForm = ref<Profile>({ ...seedProfile })
 const visualSettings = ref<VisualSettings>({ ...seedVisualSettings })
 const entryForm = ref<Entry>({ ...seedEntries[0], images: [], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' })
-let timelineObserver: IntersectionObserver | undefined
-let timelineRotationTimer: number | undefined
 let publicNavObserver: IntersectionObserver | undefined
 let timelineEntryObserver: IntersectionObserver | undefined
 let detailRotationTimer: number | undefined
@@ -213,16 +209,9 @@ onMounted(() => {
       document.querySelectorAll<HTMLElement>('[data-nav-section]').forEach(section => publicNavObserver?.observe(section))
     }
     if (!timelineElement.value || !('IntersectionObserver' in window)) {
-      timelineInView.value = true
       visibleTimelineEntries.value = new Set(latestEntries.value.map(entry => entry.id))
-      syncTimelineRotation()
       return
     }
-    timelineObserver = new IntersectionObserver(([entry]) => {
-      timelineInView.value = entry.isIntersecting
-      syncTimelineRotation()
-    }, { threshold: .18 })
-    timelineObserver.observe(timelineElement.value)
     timelineEntryObserver = new IntersectionObserver((observedEntries) => {
       observedEntries.forEach((entry) => {
         const target = entry.target as HTMLElement
@@ -249,9 +238,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleGlobalKeydown)
   publicNavObserver?.disconnect()
   window.removeEventListener('visibilitychange', syncAllRotations)
-  timelineObserver?.disconnect()
   timelineEntryObserver?.disconnect()
-  stopTimelineRotation()
   stopDetailRotation()
   stopAmbientRotation()
 })
@@ -271,8 +258,6 @@ const selectedBackgroundImages = computed(() => {
 })
 const ambientImage = computed(() => selectedBackgroundImages.value[ambientImageIndex.value % Math.max(selectedBackgroundImages.value.length, 1)] || profile.value.avatar)
 const heroCoverImage = computed(() => visualSettings.value.coverImage || profile.value.avatar)
-const activeTimelineEntry = computed(() => latestEntries.value[activeTimelineIndex.value % Math.max(latestEntries.value.length, 1)] ?? seedEntries[0])
-const timelineBackground = computed(() => timelineImage(activeTimelineEntry.value, activeTimelineImageIndex.value))
 const detailImage = computed(() => {
   const entry = selectedEntry.value
   return entry?.images[activeDetailImageIndex.value % entry.images.length] ?? entry?.image ?? ''
@@ -397,24 +382,8 @@ function updateHeaderState() { headerScrolled.value = window.scrollY > 42 }
 function handleGlobalKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && selectedEntry.value) selectedEntry.value = null
 }
-function stopTimelineRotation() {
-  if (timelineRotationTimer === undefined) return
-  window.clearInterval(timelineRotationTimer)
-  timelineRotationTimer = undefined
-}
-function syncTimelineRotation() {
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  if (!timelineInView.value || document.hidden || reducedMotion || activeTimelineEntry.value.images.length < 2) { stopTimelineRotation(); return }
-  if (timelineRotationTimer !== undefined) return
-  timelineRotationTimer = window.setInterval(() => {
-    activeTimelineImageIndex.value = (activeTimelineImageIndex.value + 1) % activeTimelineEntry.value.images.length
-  }, 5000)
-}
 function setActiveTimelineEntry(index: number) {
   activeTimelineIndex.value = index
-  activeTimelineImageIndex.value = 0
-  stopTimelineRotation()
-  syncTimelineRotation()
 }
 function stopDetailRotation() {
   if (detailRotationTimer === undefined) return
@@ -443,7 +412,7 @@ function syncDetailRotation() {
     activeDetailImageIndex.value = (activeDetailImageIndex.value + 1) % selectedEntry.value.images.length
   }, 4200)
 }
-function syncAllRotations() { syncAmbientRotation(); syncTimelineRotation(); syncDetailRotation() }
+function syncAllRotations() { syncAmbientRotation(); syncDetailRotation() }
 
 watch(selectedEntry, () => {
   activeDetailImageIndex.value = 0
@@ -570,9 +539,6 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
       </section>
 
       <section id="timeline" ref="timelineElement" data-nav-section class="timeline-section page-width">
-        <Transition name="timeline-backdrop">
-          <div :key="timelineBackground" class="timeline-backdrop" :style="{ '--timeline-image': `url(${timelineBackground})` }" aria-hidden="true"></div>
-        </Transition>
         <div class="section-heading">
           <span class="section-index">02 / ROUTE</span>
           <div>
