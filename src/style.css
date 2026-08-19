@@ -1038,7 +1038,7 @@ img { display: block; max-width: 100%; }
   min-width: 100%;
   display: flex;
   gap: 16px;
-  animation: archive-scroll 90s linear infinite;
+  animation: archive-scroll 180s linear infinite;
 }
 
 .work-section {
