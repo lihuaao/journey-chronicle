@@ -582,8 +582,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
                   <span v-for="tag in item.tags.split(',').slice(0, 3)" :key="tag">{{ tag.trim() }}</span>
                 </div>
               </div>
-              <div class="trace-media" aria-hidden="true">
-                <img :src="item.images[0] || item.image" :alt="item.title" />
+              <div class="trace-media" :style="{ '--trace-image': `url(${item.images[0] || item.image})` }" aria-hidden="true">
                 <span>IMAGE PLAYBACK</span>
               </div>
               <button class="round-arrow" title="查看详情"><ArrowUpRight :size="17" /></button>
