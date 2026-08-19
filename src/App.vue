@@ -251,11 +251,6 @@ function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = 
             </article>
           </div>
         </div>
-        <div class="ticker">
-          <div class="ticker-track">
-            <span v-for="(interest, index) in [...interestList, ...interestList]" :key="`${interest}-${index}`">{{ interest }}</span>
-          </div>
-        </div>
       </section>
 
       <section id="timeline" class="timeline-section page-width">
