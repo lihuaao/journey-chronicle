@@ -50,6 +50,13 @@ type MediaAsset = {
   entryId?: number
 }
 
+type VisualSettings = {
+  rotationSeconds: number
+  backgroundOpacity: number
+  coverImage: string
+  selectedBackgroundImages: string[]
+}
+
 const categoryOptions: EntryCategory[] = ['PROJECT', 'WORK', 'LEARNING', 'LIFE', 'NOW']
 const publicCategories = ['ALL', ...categoryOptions] as const
 const themeOptions: Array<{ id: ThemeKey; label: string; note: string }> = [
@@ -71,6 +78,13 @@ const seedProfile: Profile = {
   website: 'fieldnote.example',
   interests: '徒步, 骑行, 摄影, 钓鱼, 滑雪',
   theme: 'coral',
+}
+
+const seedVisualSettings: VisualSettings = {
+  rotationSeconds: 7,
+  backgroundOpacity: .1,
+  coverImage: '',
+  selectedBackgroundImages: [],
 }
 
 const seedEntries: Entry[] = [
@@ -109,18 +123,23 @@ const activeTimelineImageIndex = ref(0)
 const timelineInView = ref(false)
 const visibleTimelineEntries = ref(new Set<number>())
 const activeDetailImageIndex = ref(0)
+const ambientImageIndex = ref(0)
 const profileForm = ref<Profile>({ ...seedProfile })
+const visualSettings = ref<VisualSettings>({ ...seedVisualSettings })
 const entryForm = ref<Entry>({ ...seedEntries[0], images: [], id: 0, year: '', date: '', title: '', place: '', summary: '', body: '', tags: '', image: '', metric: '', category: 'PROJECT' })
 let timelineObserver: IntersectionObserver | undefined
 let timelineRotationTimer: number | undefined
 let publicNavObserver: IntersectionObserver | undefined
 let timelineEntryObserver: IntersectionObserver | undefined
 let detailRotationTimer: number | undefined
+let ambientRotationTimer: number | undefined
 
 onMounted(() => {
   const storedProfile = JSON.parse(localStorage.getItem('fieldnote-profile') || 'null') as Partial<Profile> | null
   const storedEntries = JSON.parse(localStorage.getItem('fieldnote-entries') || 'null') as Array<Partial<Entry>> | null
+  const storedVisualSettings = JSON.parse(localStorage.getItem('fieldnote-visual-settings') || 'null') as Partial<VisualSettings> | null
   profile.value = { ...seedProfile, ...storedProfile, theme: storedProfile?.theme ?? seedProfile.theme }
+  visualSettings.value = { ...seedVisualSettings, ...storedVisualSettings }
   entries.value = hydrateEntries(storedEntries)
   localStorage.setItem('fieldnote-entries', JSON.stringify(entries.value))
   const storedMedia = JSON.parse(localStorage.getItem('fieldnote-media') || 'null') as MediaAsset[] | null
@@ -163,18 +182,20 @@ onMounted(() => {
     }, { threshold: .28, rootMargin: '0px 0px -10% 0px' })
     document.querySelectorAll<HTMLElement>('[data-trace-id]').forEach(entry => timelineEntryObserver?.observe(entry))
   })
-  window.addEventListener('visibilitychange', syncMediaRotation)
+  window.addEventListener('visibilitychange', syncAllRotations)
+  syncAmbientRotation()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', updateHeaderState)
   window.removeEventListener('keydown', handleGlobalKeydown)
   publicNavObserver?.disconnect()
-  window.removeEventListener('visibilitychange', syncMediaRotation)
+  window.removeEventListener('visibilitychange', syncAllRotations)
   timelineObserver?.disconnect()
   timelineEntryObserver?.disconnect()
   stopTimelineRotation()
   stopDetailRotation()
+  stopAmbientRotation()
 })
 
 const interestList = computed(() => profile.value.interests.split(',').map(item => item.trim()).filter(Boolean))
@@ -183,6 +204,13 @@ const featuredEntries = computed(() => {
   const source = activeCategory.value === 'ALL' ? sortedEntries.value : sortedEntries.value.filter(item => item.category === activeCategory.value)
   return source.slice(0, 4)
 })
+const backgroundCandidates = computed(() => [...new Set(sortedEntries.value.flatMap(entry => entry.images))])
+const selectedBackgroundImages = computed(() => {
+  const selected = visualSettings.value.selectedBackgroundImages.filter(image => backgroundCandidates.value.includes(image))
+  return selected.length ? selected : backgroundCandidates.value
+})
+const ambientImage = computed(() => selectedBackgroundImages.value[ambientImageIndex.value % Math.max(selectedBackgroundImages.value.length, 1)] || profile.value.avatar)
+const heroCoverImage = computed(() => visualSettings.value.coverImage || profile.value.avatar)
 const activeTimelineEntry = computed(() => sortedEntries.value[activeTimelineIndex.value % Math.max(sortedEntries.value.length, 1)] ?? seedEntries[0])
 const timelineBackground = computed(() => activeTimelineEntry.value.images[activeTimelineImageIndex.value % activeTimelineEntry.value.images.length] ?? activeTimelineEntry.value.image)
 const detailImage = computed(() => {
@@ -224,6 +252,10 @@ function saveProfile() {
   profile.value = { ...profileForm.value }
   localStorage.setItem('fieldnote-profile', JSON.stringify(profile.value))
 }
+function saveVisualSettings() {
+  localStorage.setItem('fieldnote-visual-settings', JSON.stringify(visualSettings.value))
+  adminNotice.value = '背景轮播设置已保存'
+}
 function setTheme(theme: ThemeKey) {
   profileForm.value.theme = theme
   profile.value.theme = theme
@@ -244,6 +276,29 @@ function saveEntry() {
 }
 function setEntryImages(value: string) {
   entryForm.value.images = value.split(',').map(image => image.trim()).filter(Boolean)
+}
+function isBackgroundImageSelected(image: string) {
+  return visualSettings.value.selectedBackgroundImages.length === 0 || visualSettings.value.selectedBackgroundImages.includes(image)
+}
+function setBackgroundImageSelected(image: string, checked: boolean) {
+  const allImages = backgroundCandidates.value
+  const selected = visualSettings.value.selectedBackgroundImages.length ? [...visualSettings.value.selectedBackgroundImages] : [...allImages]
+  const next = checked ? [...new Set([...selected, image])] : selected.filter(item => item !== image)
+  visualSettings.value.selectedBackgroundImages = next.length === allImages.length ? [] : next
+  ambientImageIndex.value = 0
+  stopAmbientRotation()
+  syncAmbientRotation()
+}
+function uploadCoverImage(event: Event) {
+  const file = (event.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  if (!file.type.startsWith('image/') || file.size > 2 * 1024 * 1024) { adminNotice.value = '请选择小于 2 MB 的图片文件'; return }
+  const reader = new FileReader()
+  reader.addEventListener('load', () => {
+    visualSettings.value.coverImage = String(reader.result)
+    saveVisualSettings()
+  })
+  reader.readAsDataURL(file)
 }
 function deleteEntry(id: number) {
   entries.value = entries.value.filter(item => item.id !== id)
@@ -289,6 +344,19 @@ function stopDetailRotation() {
   window.clearInterval(detailRotationTimer)
   detailRotationTimer = undefined
 }
+function stopAmbientRotation() {
+  if (ambientRotationTimer === undefined) return
+  window.clearInterval(ambientRotationTimer)
+  ambientRotationTimer = undefined
+}
+function syncAmbientRotation() {
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  if (document.hidden || reducedMotion || selectedBackgroundImages.value.length < 2) { stopAmbientRotation(); return }
+  if (ambientRotationTimer !== undefined) return
+  ambientRotationTimer = window.setInterval(() => {
+    ambientImageIndex.value = (ambientImageIndex.value + 1) % selectedBackgroundImages.value.length
+  }, Math.max(3, visualSettings.value.rotationSeconds) * 1000)
+}
 function syncDetailRotation() {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   if (!selectedEntry.value || document.hidden || reducedMotion || selectedEntry.value.images.length < 2) { stopDetailRotation(); return }
@@ -298,12 +366,18 @@ function syncDetailRotation() {
     activeDetailImageIndex.value = (activeDetailImageIndex.value + 1) % selectedEntry.value.images.length
   }, 4200)
 }
-function syncMediaRotation() { syncTimelineRotation(); syncDetailRotation() }
+function syncAllRotations() { syncAmbientRotation(); syncTimelineRotation(); syncDetailRotation() }
 
 watch(selectedEntry, () => {
   activeDetailImageIndex.value = 0
   stopDetailRotation()
   syncDetailRotation()
+})
+
+watch([() => visualSettings.value.rotationSeconds, selectedBackgroundImages], () => {
+  ambientImageIndex.value = 0
+  stopAmbientRotation()
+  syncAmbientRotation()
 })
 function moveHero(event: PointerEvent) {
   if (event.pointerType === 'touch') return
@@ -317,7 +391,10 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
 </script>
 
 <template>
-  <div class="app-shell" :class="`theme-${profile.theme}`" :style="{ '--ambient-image': `url(${profile.avatar})` }">
+  <div class="app-shell" :class="`theme-${profile.theme}`" :style="{ '--ambient-opacity': visualSettings.backgroundOpacity }">
+    <Transition name="ambient-layer">
+      <div :key="ambientImage" class="ambient-layer" :style="{ '--ambient-image': `url(${ambientImage})` }" aria-hidden="true"></div>
+    </Transition>
     <header v-if="activeView === 'public'" class="site-header" :class="{ 'is-scrolled': headerScrolled }">
       <button class="wordmark" @click="openPublic">
         <span class="wordmark-mark"><Compass :size="15" /></span>
@@ -340,7 +417,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
 
     <main v-if="activeView === 'public'" class="public-page">
       <section class="hero-section" :style="{ '--tilt-x': heroTilt.x, '--tilt-y': heroTilt.y }" @pointermove="moveHero" @pointerleave="resetHero">
-        <div class="hero-backdrop" aria-hidden="true"><img :src="profile.avatar" alt="" /></div>
+        <div class="hero-backdrop" aria-hidden="true"><img :src="heroCoverImage" alt="" /></div>
         <div class="hero-shade" aria-hidden="true"></div>
         <div class="hero-content page-width">
           <div class="hero-copy reveal">
@@ -615,6 +692,24 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
           <section v-else class="admin-panel">
             <div class="panel-title"><div><span class="panel-kicker">SETTINGS</span><h2>公开页面设置</h2></div></div>
             <div class="setting-block"><div><strong>公开状态</strong><span>分享链接当前可被访问，访客只能读取已发布内容。</span></div><span class="status-pill"><i></i> PUBLIC / READ ONLY</span></div>
+            <div class="setting-block visual-setting-block">
+              <div><strong>全站背景轮播</strong><span>默认轮播所有节点图集；取消勾选即可限定参与轮播的画面。</span></div>
+              <div class="visual-control-grid">
+                <label>轮播间隔（秒）<input v-model.number="visualSettings.rotationSeconds" type="number" min="3" max="30" step="1" /></label>
+                <label>背景透明度 <output>{{ Math.round(visualSettings.backgroundOpacity * 100) }}%</output><input v-model.number="visualSettings.backgroundOpacity" type="range" min=".03" max=".28" step=".01" /></label>
+                <label class="wide">从节点图片选择封面<select v-model="visualSettings.coverImage"><option value="">使用个人资料封面</option><option v-for="image in backgroundCandidates" :key="image" :value="image">节点图片 {{ backgroundCandidates.indexOf(image) + 1 }}</option></select></label>
+                <label class="wide">封面图片地址<input v-model="visualSettings.coverImage" placeholder="https://..." /></label>
+              </div>
+              <label class="cover-upload"><Upload :size="16" /> 上传封面图片<input type="file" accept="image/*" @change="uploadCoverImage" /></label>
+              <div class="background-picker" aria-label="选择全站背景轮播图片">
+                <label v-for="(image, index) in backgroundCandidates" :key="image" class="background-choice" :class="{ selected: isBackgroundImageSelected(image) }">
+                  <input type="checkbox" :checked="isBackgroundImageSelected(image)" @change="setBackgroundImageSelected(image, ($event.target as HTMLInputElement).checked)" />
+                  <img :src="image" :alt="`节点图片 ${index + 1}`" />
+                  <span>图 {{ index + 1 }}</span>
+                </label>
+              </div>
+              <button class="primary-btn" @click="saveVisualSettings"><Save :size="16" /> 保存背景设置</button>
+            </div>
             <div class="setting-block">
               <div><strong>选择视觉主题</strong><span>主题配置会同步到公开主页，内容与权限保持不变。</span></div>
               <div class="appearance-options">
