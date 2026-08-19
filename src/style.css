@@ -770,13 +770,13 @@ img { display: block; max-width: 100%; }
 
 .timeline-backdrop {
   position: absolute;
-  inset: 34px 0 0;
+  inset: 0 calc(50% - 50vw);
   z-index: 0;
   background-image: var(--timeline-image);
   background-position: center;
   background-size: cover;
   filter: saturate(.72) contrast(.94);
-  opacity: .13;
+  opacity: .08;
   pointer-events: none;
 }
 
