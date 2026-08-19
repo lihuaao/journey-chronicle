@@ -251,7 +251,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
 </script>
 
 <template>
-  <div class="app-shell" :class="`theme-${profile.theme}`">
+  <div class="app-shell" :class="`theme-${profile.theme}`" :style="{ '--ambient-image': `url(${profile.avatar})` }">
     <header v-if="activeView === 'public'" class="site-header" :class="{ 'is-scrolled': headerScrolled }">
       <button class="wordmark" @click="openPublic">
         <span class="wordmark-mark"><Compass :size="15" /></span>
@@ -299,7 +299,7 @@ function resetHero() { heroTilt.value = { x: 0, y: 0 } }
                 <strong>{{ sortedEntries[0]?.year || 'NOW' }}</strong>
               </div>
               <div class="route-line">
-                <span v-for="item in sortedEntries.slice(0, 4)" :key="item.id" class="route-stop" tabindex="0">
+                <span v-for="item in sortedEntries.slice(0, 4)" :key="item.id" class="route-stop" :title="item.title" tabindex="0">
                   <span class="route-tip"><b>{{ item.year }}</b><strong>{{ item.category }} / {{ item.title }}</strong></span>
                 </span>
               </div>
