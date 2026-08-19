@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import {
   ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, Check, Compass, Edit3,
   ExternalLink, Eye, Image, LayoutDashboard, LogIn, LogOut, Mail, MapPin,
-  Menu, Plus, Save, Settings, ShieldCheck, Sparkles, Trash2, Upload, Video, X,
+  Menu, Save, Settings, ShieldCheck, Sparkles, Trash2, Upload, Video, X,
 } from 'lucide-vue-next'
 
 type ThemeKey = 'signal' | 'coral' | 'cobalt'
@@ -169,71 +169,318 @@ function scrollTo(id: string) { activeView.value = 'public'; mobileOpen.value = 
 <template>
   <div class="app-shell" :class="`theme-${profile.theme}`">
     <header v-if="activeView === 'public'" class="site-header">
-      <button class="wordmark" @click="openPublic"><span class="wordmark-dot"></span><span>FIELDNOTE</span><small>/ PERSONAL INDEX</small></button>
-      <nav class="desktop-nav"><button @click="scrollTo('about')">关于我</button><button @click="scrollTo('timeline')">履历时间线</button><button @click="scrollTo('work')">作品切片</button><button class="edit-link" @click="openAdmin"><LogIn :size="14" /> 后台登录</button></nav>
+      <button class="wordmark" @click="openPublic">
+        <span class="wordmark-mark"><Compass :size="15" /></span>
+        <span>JOURNEY CHRONICLE</span>
+      </button>
+      <nav class="desktop-nav">
+        <button @click="scrollTo('about')">概览</button>
+        <button @click="scrollTo('timeline')">路线</button>
+        <button @click="scrollTo('work')">图集</button>
+        <button class="nav-login" @click="openAdmin"><LogIn :size="14" /> 管理</button>
+      </nav>
       <button class="icon-button mobile-menu" title="打开菜单" @click="mobileOpen = !mobileOpen"><Menu :size="18" /></button>
-      <div v-if="mobileOpen" class="mobile-nav"><button @click="scrollTo('about')">关于我</button><button @click="scrollTo('timeline')">履历时间线</button><button @click="scrollTo('work')">作品切片</button><button @click="openAdmin">后台登录</button></div>
+      <div v-if="mobileOpen" class="mobile-nav">
+        <button @click="scrollTo('about')">概览</button>
+        <button @click="scrollTo('timeline')">路线</button>
+        <button @click="scrollTo('work')">图集</button>
+        <button @click="openAdmin">管理</button>
+      </div>
     </header>
 
     <main v-if="activeView === 'public'" class="public-page">
       <section class="hero-section page-width">
-        <div class="hero-copy reveal"><p class="overline"><span class="live-dot"></span> {{ profile.availability }} · {{ profile.location }}</p><h1>{{ profile.name }}<span class="stroke-mark">.</span></h1><p class="hero-role">{{ profile.role }}</p><p class="hero-tagline">{{ profile.tagline }}</p><div class="hero-actions"><button class="primary-btn" @click="scrollTo('timeline')">从时间线认识我 <ArrowDownRight :size="17" /></button><a class="text-link" :href="`mailto:${profile.email}`">联系我 <ArrowRight :size="15" /></a></div></div>
-        <div class="hero-visual reveal delay-1"><div class="hero-image-wrap"><img :src="profile.avatar" :alt="profile.name" /><div class="image-caption"><span>01 / FIELD NOTES</span><span>LOOKING CLOSER</span></div></div><div class="hero-stamp"><Compass :size="22" /><span>STAY<br />CURIOUS</span></div></div>
+        <div class="hero-copy reveal">
+          <p class="overline"><span class="live-dot"></span> {{ profile.availability }} / {{ profile.location }}</p>
+          <h1>{{ profile.name }}</h1>
+          <p class="hero-role">{{ profile.role }}</p>
+          <p class="hero-tagline">{{ profile.tagline }}</p>
+          <div class="hero-actions">
+            <button class="primary-btn" @click="scrollTo('timeline')">查看旅程 <ArrowDownRight :size="17" /></button>
+            <a class="ghost-btn" :href="`mailto:${profile.email}`">联系 <Mail :size="16" /></a>
+          </div>
+        </div>
+
+        <div class="hero-map reveal delay-1">
+          <div class="hero-photo">
+            <img :src="profile.avatar" :alt="profile.name" />
+            <div class="photo-label">
+              <span>BASE</span>
+              <strong>{{ profile.location }}</strong>
+            </div>
+          </div>
+          <div class="route-panel">
+            <div class="route-panel-head">
+              <span>ACTIVE LOG</span>
+              <strong>{{ sortedEntries[0]?.year || 'NOW' }}</strong>
+            </div>
+            <div class="route-line">
+              <span v-for="item in sortedEntries.slice(0, 4)" :key="item.id" :title="item.title"></span>
+            </div>
+            <button v-if="sortedEntries[0]" class="route-current" @click="selectedEntry = sortedEntries[0]">
+              <span>{{ sortedEntries[0].category }}</span>
+              <strong>{{ sortedEntries[0].title }}</strong>
+              <small><MapPin :size="12" /> {{ sortedEntries[0].place }}</small>
+            </button>
+          </div>
+        </div>
       </section>
 
-      <div class="ticker"><div class="ticker-track"><span v-for="(interest, index) in [...interestList, ...interestList]" :key="`${interest}-${index}`">{{ interest }} <i>✦</i></span></div></div>
+      <section id="about" class="brief-band">
+        <div class="page-width brief-grid">
+          <article class="brief-story">
+            <span class="section-index">01 / PROFILE</span>
+            <h2>把每段经历整理成可以回看的坐标。</h2>
+            <p>{{ profile.bio }}</p>
+          </article>
+          <div class="brief-stats">
+            <article>
+              <small>TRACE NODES</small>
+              <strong>{{ entries.length.toString().padStart(2, '0') }}</strong>
+              <span>published</span>
+            </article>
+            <article>
+              <small>MEDIA</small>
+              <strong>{{ mediaAssets.length.toString().padStart(2, '0') }}</strong>
+              <span>images/video</span>
+            </article>
+            <article>
+              <small>FOCUS</small>
+              <strong>{{ interestList.length.toString().padStart(2, '0') }}</strong>
+              <span>interests</span>
+            </article>
+          </div>
+        </div>
+        <div class="ticker">
+          <div class="ticker-track">
+            <span v-for="(interest, index) in [...interestList, ...interestList]" :key="`${interest}-${index}`">{{ interest }}</span>
+          </div>
+        </div>
+      </section>
 
-      <section id="about" class="about-section page-width section-grid"><div class="section-index">01 <span>ABOUT</span></div><div class="about-content"><h2>一个正在持续更新的人。</h2><p class="about-lede">{{ profile.bio }}</p><div class="about-facts"><div><small>BASE</small><strong>{{ profile.location }}</strong></div><div><small>FOCUS</small><strong>{{ interestList.slice(0, 3).join(' · ') }}</strong></div><div><small>OPEN TO</small><strong>{{ profile.availability }}</strong></div></div><div class="interest-list"><span v-for="(interest, index) in interestList" :key="interest" class="interest-chip" :class="`tone-${index % 4}`">{{ interest }}</span></div></div></section>
+      <section id="timeline" class="timeline-section page-width">
+        <div class="section-heading">
+          <span class="section-index">02 / ROUTE</span>
+          <div>
+            <h2>从现在往回看，每个节点都留下形状。</h2>
+            <p>点击任意节点，查看这一段旅程的背景、地点、标签和记录正文。</p>
+          </div>
+        </div>
+        <div class="trace-list">
+          <article v-for="item in sortedEntries" :key="item.id" class="trace-item" @click="selectedEntry = item">
+            <time>{{ item.year }}</time>
+            <div class="trace-card">
+              <div class="trace-copy">
+                <div class="trace-meta"><span>{{ item.category }}</span><span>{{ item.date }}</span></div>
+                <h3>{{ item.title }}</h3>
+                <p class="trace-place"><MapPin :size="13" /> {{ item.place }}</p>
+                <p>{{ item.summary }}</p>
+                <div class="mini-tags">
+                  <span v-for="tag in item.tags.split(',').slice(0, 3)" :key="tag">{{ tag.trim() }}</span>
+                </div>
+              </div>
+              <img :src="item.image" :alt="item.title" />
+              <button class="round-arrow" title="查看详情"><ArrowUpRight :size="17" /></button>
+            </div>
+          </article>
+        </div>
+      </section>
 
-      <section id="timeline" class="timeline-section page-width"><div class="section-grid section-heading"><div class="section-index">02 <span>THE TRACE</span></div><div><h2>经历不是履历表，<br /><em>是你走过的路径。</em></h2><p>每一个节点都可以展开，看到当时的背景、选择和留下的作品。</p></div></div><div class="trace-list"><article v-for="item in sortedEntries" :key="item.id" class="trace-item" @click="selectedEntry = item"><div class="trace-year">{{ item.year }}</div><div class="trace-marker"><span></span></div><div class="trace-main"><div class="trace-meta"><span>{{ item.category }}</span><time>{{ item.date }}</time></div><h3>{{ item.title }}</h3><p class="trace-place"><MapPin :size="13" /> {{ item.place }}</p><p class="trace-summary">{{ item.summary }}</p><div class="trace-bottom"><div class="mini-tags"><span v-for="tag in item.tags.split(',').slice(0, 3)" :key="tag">{{ tag.trim() }}</span></div><button class="round-arrow" title="查看详情"><ArrowUpRight :size="17" /></button></div></div><img class="trace-image" :src="item.image" :alt="item.title" /></article></div></section>
+      <section id="work" class="work-section page-width">
+        <div class="section-heading">
+          <span class="section-index">03 / GALLERY</span>
+          <div>
+            <h2>作品图集，让路径变得可见。</h2>
+            <p>筛选项目、工作、学习、生活或正在发生的内容。</p>
+          </div>
+        </div>
+        <div class="work-filters">
+          <button v-for="category in publicCategories" :key="category" :class="{ active: activeCategory === category }" @click="setActiveCategory(category)">{{ category }}</button>
+        </div>
+        <div v-if="featuredEntries.length" class="work-grid">
+          <article v-for="(item, index) in featuredEntries" :key="item.id" class="work-card" :class="{ featured: index === 0 }" @click="selectedEntry = item">
+            <img :src="item.image" :alt="item.title" />
+            <div class="work-overlay">
+              <span>{{ item.metric }}</span>
+              <h3>{{ item.title }}</h3>
+              <p>{{ item.category }} / {{ item.place }}</p>
+            </div>
+            <div class="work-corner"><ExternalLink :size="15" /></div>
+          </article>
+        </div>
+        <div v-else class="work-empty">这个分类还没有内容，去后台添加第一个节点。</div>
+      </section>
 
-      <section id="work" class="work-section page-width"><div class="section-grid section-heading"><div class="section-index">03 <span>SELECTED WORK</span></div><div><h2>把经历变成<br /><em>可以被看见的作品。</em></h2><p>按内容类型浏览项目、工作、学习、生活和正在发生的事。</p></div></div><div class="work-filters"><button v-for="category in publicCategories" :key="category" :class="{ active: activeCategory === category }" @click="setActiveCategory(category)">{{ category }}</button></div><div v-if="featuredEntries.length" class="work-grid"><article v-for="(item, index) in featuredEntries" :key="item.id" class="work-card" :class="{ featured: index === 0 }" @click="selectedEntry = item"><img :src="item.image" :alt="item.title" /><div class="work-overlay"><span>{{ item.category }}</span><h3>{{ item.title }}</h3><p>{{ item.metric }}</p></div><div class="work-corner"><ExternalLink :size="15" /></div></article></div><div v-else class="work-empty">这个分类还没有内容，去后台添加第一个节点。</div></section>
-
-      <section class="contact-section page-width"><div><p class="overline">LET'S MAKE SOMETHING REAL</p><h2>有一个故事，<br />正在等着被记录。</h2></div><a class="contact-button" :href="`mailto:${profile.email}`"><Mail :size="18" /> {{ profile.email }} <ArrowUpRight :size="18" /></a></section>
+      <section class="contact-section page-width">
+        <div>
+          <p class="overline">NEXT CHAPTER</p>
+          <h2>有新的路线、项目或影像计划，可以从这里开始。</h2>
+        </div>
+        <a class="contact-button" :href="`mailto:${profile.email}`">{{ profile.email }} <ArrowRight :size="17" /></a>
+      </section>
     </main>
 
     <main v-else class="admin-page">
       <section v-if="!adminAuthenticated" class="admin-login page-width">
         <div class="admin-login-mark"><ShieldCheck :size="22" /></div>
-        <p class="overline">FIELDNOTE / OWNER ACCESS</p>
-        <h1>进入你的内容后台。</h1>
-        <p>公开链接只负责展示。节点、作品、媒体和个人资料，都在这个独立的管理工作台中维护。</p>
-        <div class="admin-login-form"><label>管理员邮箱<input value="owner@fieldnote.me" type="email" /></label><label>访问密码<input value="mock-password" type="password" /></label><button class="primary-btn" @click="loginAdmin"><LogIn :size="16" /> 进入模拟后台</button></div>
+        <p class="overline">JOURNEY CHRONICLE / OWNER ACCESS</p>
+        <h1>进入旅程内容后台。</h1>
+        <p>这里维护公开主页的个人资料、旅程节点、媒体资源和视觉主题。当前是本地模拟登录。</p>
+        <div class="admin-login-form">
+          <label>管理员邮箱<input value="owner@journey.me" type="email" /></label>
+          <label>访问密码<input value="mock-password" type="password" /></label>
+          <button class="primary-btn" @click="loginAdmin"><LogIn :size="16" /> 进入后台</button>
+        </div>
         <button class="text-link" @click="openPublic">返回公开主页 <ExternalLink :size="15" /></button>
       </section>
 
       <div v-else class="admin-platform">
         <aside class="admin-sidebar">
-          <button class="admin-brand" @click="selectAdminSection('dashboard')"><span class="wordmark-dot"></span><strong>FIELDNOTE</strong><small>/ EDITOR</small></button>
-          <div class="sidebar-group"><small>CONTENT</small><button :class="{ active: adminSection === 'dashboard' }" @click="selectAdminSection('dashboard')"><LayoutDashboard :size="15" /> 概览</button><button :class="{ active: adminSection === 'profile' }" @click="selectAdminSection('profile')"><Edit3 :size="15" /> 个人资料</button><button :class="{ active: adminSection === 'entries' }" @click="selectAdminSection('entries')"><BarChart3 :size="15" /> 履历节点 <span>{{ entries.length }}</span></button><button :class="{ active: adminSection === 'media' }" @click="selectAdminSection('media')"><Image :size="15" /> 作品媒体 <span>{{ mediaAssets.length }}</span></button></div>
-          <div class="sidebar-group"><small>SETTINGS</small><button :class="{ active: adminSection === 'settings' }" @click="selectAdminSection('settings')"><Settings :size="15" /> 公开设置</button></div>
-          <div class="sidebar-footer"><button @click="openPublic"><Eye :size="15" /> 查看公开主页</button><button @click="logoutAdmin"><LogOut :size="15" /> 退出后台</button></div>
+          <button class="admin-brand" @click="selectAdminSection('dashboard')">
+            <span class="wordmark-mark"><Compass :size="14" /></span>
+            <strong>JOURNEY</strong>
+          </button>
+          <div class="sidebar-group">
+            <small>CONTENT</small>
+            <button :class="{ active: adminSection === 'dashboard' }" @click="selectAdminSection('dashboard')"><LayoutDashboard :size="15" /> 概览</button>
+            <button :class="{ active: adminSection === 'profile' }" @click="selectAdminSection('profile')"><Edit3 :size="15" /> 个人资料</button>
+            <button :class="{ active: adminSection === 'entries' }" @click="selectAdminSection('entries')"><BarChart3 :size="15" /> 旅程节点 <span>{{ entries.length }}</span></button>
+            <button :class="{ active: adminSection === 'media' }" @click="selectAdminSection('media')"><Image :size="15" /> 媒体 <span>{{ mediaAssets.length }}</span></button>
+          </div>
+          <div class="sidebar-group">
+            <small>SYSTEM</small>
+            <button :class="{ active: adminSection === 'settings' }" @click="selectAdminSection('settings')"><Settings :size="15" /> 设置</button>
+          </div>
+          <div class="sidebar-footer">
+            <button @click="openPublic"><Eye :size="15" /> 公开页</button>
+            <button @click="logoutAdmin"><LogOut :size="15" /> 退出</button>
+          </div>
         </aside>
 
         <section class="admin-content">
-          <header class="admin-toolbar"><div><p class="overline">FIELDNOTE / EDITOR</p><h1>{{ adminSection === 'dashboard' ? '早上好，Li Hao' : adminSection === 'profile' ? '个人资料' : adminSection === 'entries' ? '履历节点' : adminSection === 'media' ? '作品媒体' : '公开设置' }}</h1><p>{{ adminSection === 'dashboard' ? '你的个人主页最近一次更新：今天 10:24' : '这里的修改只会影响公开页面的内容，不会改变分享链接的权限。' }}</p></div><button class="text-link" @click="openPublic"><Eye :size="15" /> 查看公开主页</button></header>
+          <header class="admin-toolbar">
+            <div>
+              <p class="overline">EDITOR WORKSPACE</p>
+              <h1>{{ adminSection === 'dashboard' ? '内容总览' : adminSection === 'profile' ? '个人资料' : adminSection === 'entries' ? '旅程节点' : adminSection === 'media' ? '媒体资源' : '公开设置' }}</h1>
+              <p>{{ adminSection === 'dashboard' ? '从这里检查公开主页内容、最近节点和媒体数量。' : '修改会写入本地浏览器存储，用于演示后台体验。' }}</p>
+            </div>
+            <button class="ghost-btn" @click="openPublic"><Eye :size="15" /> 预览</button>
+          </header>
           <div v-if="adminNotice" class="admin-notice"><Check :size="15" /> {{ adminNotice }}</div>
 
           <section v-if="adminSection === 'dashboard'" class="admin-dashboard">
-            <div class="admin-metric-row"><article><small>PUBLIC VIEWS / 30D</small><strong>2,480</strong><span>mock analytics</span></article><article><small>TRACE NODES</small><strong>{{ entries.length.toString().padStart(2, '0') }}</strong><span>published nodes</span></article><article><small>MEDIA ASSETS</small><strong>{{ mediaAssets.length.toString().padStart(3, '0') }}</strong><span>images + videos</span></article></div>
-            <div class="admin-section-heading"><div><span class="panel-kicker">CONTENT / RECENT</span><h2>最近编辑的节点</h2></div><button class="ghost-btn" @click="selectAdminSection('entries')">管理全部 <ArrowRight :size="15" /></button></div>
-            <div class="admin-manager-list"><article v-for="item in sortedEntries.slice(0, 4)" :key="item.id" class="admin-manager-row"><span class="manager-year">{{ item.year }}</span><div><strong>{{ item.title }}</strong><span>{{ item.category }} · {{ item.place }}</span></div><button class="icon-button" title="编辑节点" @click="editEntry(item)"><Edit3 :size="15" /></button></article></div>
-            <div class="admin-boundary"><ShieldCheck :size="18" /><div><strong>公开链接当前为只读</strong><p>访客只能查看已发布的个人资料、履历和作品。所有修改必须经过这个后台入口。</p></div><span>OWNER ONLY</span></div>
+            <div class="admin-metric-row">
+              <article><small>PUBLIC VIEWS</small><strong>2,480</strong><span>mock / 30d</span></article>
+              <article><small>TRACE NODES</small><strong>{{ entries.length.toString().padStart(2, '0') }}</strong><span>published</span></article>
+              <article><small>MEDIA ASSETS</small><strong>{{ mediaAssets.length.toString().padStart(3, '0') }}</strong><span>library</span></article>
+            </div>
+            <div class="admin-section-heading">
+              <div><span class="panel-kicker">RECENT ROUTE</span><h2>最近节点</h2></div>
+              <button class="ghost-btn" @click="selectAdminSection('entries')">管理全部 <ArrowRight :size="15" /></button>
+            </div>
+            <div class="admin-manager-list">
+              <article v-for="item in sortedEntries.slice(0, 4)" :key="item.id" class="admin-manager-row">
+                <span class="manager-year">{{ item.year }}</span>
+                <div><strong>{{ item.title }}</strong><span>{{ item.category }} / {{ item.place }}</span></div>
+                <button class="icon-button" title="编辑节点" @click="editEntry(item)"><Edit3 :size="15" /></button>
+              </article>
+            </div>
+            <div class="admin-boundary"><ShieldCheck :size="18" /><div><strong>公开页面保持只读</strong><p>访客只能查看已发布内容；新增、删除和主题切换都留在后台。</p></div><span>OWNER ONLY</span></div>
           </section>
 
-          <section v-else-if="adminSection === 'profile'" class="admin-panel"><div class="panel-title"><div><span class="panel-kicker">PROFILE / 01</span><h2>先让别人认识你</h2></div><button class="primary-btn" @click="saveProfile"><Save :size="16" /> 保存资料</button></div><div class="editor-grid"><label>你的名字<input v-model="profileForm.name" /></label><label>头像字母<input v-model="profileForm.initials" maxlength="3" /></label><label>身份 / 角色<input v-model="profileForm.role" /></label><label>所在位置<input v-model="profileForm.location" /></label><label class="wide">一句话介绍<textarea v-model="profileForm.tagline" rows="2" /></label><label class="wide">个人简介<textarea v-model="profileForm.bio" rows="5" /></label><label>对外状态<input v-model="profileForm.availability" /></label><label>联系邮箱<input v-model="profileForm.email" type="email" /></label><label class="wide">头像图片地址<input v-model="profileForm.avatar" /></label><label class="wide">兴趣标签（用逗号分隔）<input v-model="profileForm.interests" placeholder="徒步, 摄影, 滑雪" /></label></div><div class="editor-preview"><span class="preview-label">LIVE PREVIEW</span><strong>{{ profileForm.name || '你的名字' }}</strong><span>{{ profileForm.role || '你的身份 / 角色' }}</span></div></section>
+          <section v-else-if="adminSection === 'profile'" class="admin-panel">
+            <div class="panel-title"><div><span class="panel-kicker">PROFILE</span><h2>编辑公开身份</h2></div><button class="primary-btn" @click="saveProfile"><Save :size="16" /> 保存</button></div>
+            <div class="editor-grid">
+              <label>你的名字<input v-model="profileForm.name" /></label>
+              <label>头像字母<input v-model="profileForm.initials" maxlength="3" /></label>
+              <label>身份 / 角色<input v-model="profileForm.role" /></label>
+              <label>所在位置<input v-model="profileForm.location" /></label>
+              <label class="wide">一句话介绍<textarea v-model="profileForm.tagline" rows="2" /></label>
+              <label class="wide">个人简介<textarea v-model="profileForm.bio" rows="5" /></label>
+              <label>对外状态<input v-model="profileForm.availability" /></label>
+              <label>联系邮箱<input v-model="profileForm.email" type="email" /></label>
+              <label class="wide">头像图片地址<input v-model="profileForm.avatar" /></label>
+              <label class="wide">兴趣标签（用逗号分隔）<input v-model="profileForm.interests" placeholder="徒步, 摄影, 滑雪" /></label>
+            </div>
+            <div class="editor-preview"><span>LIVE PREVIEW</span><strong>{{ profileForm.name || '你的名字' }}</strong><small>{{ profileForm.role || '你的身份 / 角色' }}</small></div>
+          </section>
 
-          <section v-else-if="adminSection === 'entries'" class="admin-panel"><div class="panel-title"><div><span class="panel-kicker">TRACE / 02</span><h2>{{ editingId ? '编辑履历节点' : '添加履历节点' }}</h2></div><button v-if="editingId" class="icon-button" title="取消编辑" @click="resetEntry"><X :size="17" /></button></div><div class="editor-grid"><label>年份<input v-model="entryForm.year" placeholder="2025" /></label><label>节点日期<input v-model="entryForm.date" placeholder="2025.02 — 至今" /></label><label>节点类型<select v-model="entryForm.category"><option v-for="category in categoryOptions" :key="category">{{ category }}</option></select></label><label>地点<input v-model="entryForm.place" placeholder="中国 · 西南线" /></label><label class="wide">标题<input v-model="entryForm.title" placeholder="这个节点发生了什么？" /></label><label class="wide">一句话摘要<textarea v-model="entryForm.summary" rows="2" /></label><label class="wide">详细介绍<textarea v-model="entryForm.body" rows="5" /></label><label class="wide">标签（用逗号分隔）<input v-model="entryForm.tags" placeholder="摄影, 纪实, 长期项目" /></label><label class="wide">封面图片地址<input v-model="entryForm.image" placeholder="https://..." /></label><label>数据标记<input v-model="entryForm.metric" placeholder="312 km / 03 days" /></label></div><div class="editor-actions"><button class="ghost-btn" @click="resetEntry">清空</button><button class="primary-btn" :disabled="!entryForm.title || !entryForm.year || !entryForm.summary" @click="saveEntry"><Check :size="16" /> {{ editingId ? '保存修改' : '发布节点' }}</button></div><div class="admin-section-heading"><div><span class="panel-kicker">CONTENT / MANAGE</span><h2>已有节点</h2></div><span class="admin-count">{{ entries.length }} nodes</span></div><div class="admin-manager-list"><article v-for="item in sortedEntries" :key="item.id" class="admin-manager-row"><span class="manager-year">{{ item.year }}</span><div><strong>{{ item.title }}</strong><span>{{ item.category }} · {{ item.place }}</span></div><div class="row-actions"><button class="icon-button" title="编辑节点" @click="editEntry(item)"><Edit3 :size="15" /></button><button class="icon-button danger" title="删除节点" @click="deleteEntry(item.id)"><Trash2 :size="15" /></button></div></article></div></section>
+          <section v-else-if="adminSection === 'entries'" class="admin-panel">
+            <div class="panel-title"><div><span class="panel-kicker">TRACE</span><h2>{{ editingId ? '编辑节点' : '添加节点' }}</h2></div><button v-if="editingId" class="icon-button" title="取消编辑" @click="resetEntry"><X :size="17" /></button></div>
+            <div class="editor-grid">
+              <label>年份<input v-model="entryForm.year" placeholder="2025" /></label>
+              <label>节点日期<input v-model="entryForm.date" placeholder="2025.02 - 至今" /></label>
+              <label>节点类型<select v-model="entryForm.category"><option v-for="category in categoryOptions" :key="category">{{ category }}</option></select></label>
+              <label>地点<input v-model="entryForm.place" placeholder="中国 / 西南线" /></label>
+              <label class="wide">标题<input v-model="entryForm.title" placeholder="这个节点发生了什么？" /></label>
+              <label class="wide">一句话摘要<textarea v-model="entryForm.summary" rows="2" /></label>
+              <label class="wide">详细介绍<textarea v-model="entryForm.body" rows="5" /></label>
+              <label class="wide">标签（用逗号分隔）<input v-model="entryForm.tags" placeholder="摄影, 纪实, 长期项目" /></label>
+              <label class="wide">封面图片地址<input v-model="entryForm.image" placeholder="https://..." /></label>
+              <label>数据标记<input v-model="entryForm.metric" placeholder="312 km / 03 days" /></label>
+            </div>
+            <div class="editor-actions">
+              <button class="ghost-btn" @click="resetEntry">清空</button>
+              <button class="primary-btn" :disabled="!entryForm.title || !entryForm.year || !entryForm.summary" @click="saveEntry"><Check :size="16" /> {{ editingId ? '保存修改' : '发布节点' }}</button>
+            </div>
+            <div class="admin-section-heading"><div><span class="panel-kicker">MANAGE</span><h2>已有节点</h2></div><span class="admin-count">{{ entries.length }} nodes</span></div>
+            <div class="admin-manager-list">
+              <article v-for="item in sortedEntries" :key="item.id" class="admin-manager-row">
+                <span class="manager-year">{{ item.year }}</span>
+                <div><strong>{{ item.title }}</strong><span>{{ item.category }} / {{ item.place }}</span></div>
+                <div class="row-actions"><button class="icon-button" title="编辑节点" @click="editEntry(item)"><Edit3 :size="15" /></button><button class="icon-button danger" title="删除节点" @click="deleteEntry(item.id)"><Trash2 :size="15" /></button></div>
+              </article>
+            </div>
+          </section>
 
-          <section v-else-if="adminSection === 'media'" class="admin-panel"><div class="panel-title"><div><span class="panel-kicker">MEDIA / 03</span><h2>管理你的作品媒体</h2></div><button class="primary-btn" @click="addMockMedia"><Upload :size="16" /> 添加 mock 媒体</button></div><div class="media-dropzone"><Upload :size="22" /><strong>拖入图片或视频，或添加一条 mock 资源</strong><span>当前无服务器，先用本地 mock 数据维护上传效果。</span></div><div class="media-grid"><article v-for="asset in mediaAssets" :key="asset.id" class="media-card"><div class="media-thumb"><img :src="asset.url" :alt="asset.name" /><span v-if="asset.type === 'VIDEO'"><Video :size="14" /> VIDEO</span></div><div><strong>{{ asset.name }}</strong><small>{{ asset.type }} · {{ asset.size }} · {{ asset.date }}</small></div></article></div></section>
+          <section v-else-if="adminSection === 'media'" class="admin-panel">
+            <div class="panel-title"><div><span class="panel-kicker">MEDIA</span><h2>管理媒体库</h2></div><button class="primary-btn" @click="addMockMedia"><Upload :size="16" /> 添加 mock 媒体</button></div>
+            <div class="media-dropzone"><Upload :size="22" /><strong>拖入图片或视频</strong><span>当前无服务器，先用本地 mock 数据维护上传效果。</span></div>
+            <div class="media-grid">
+              <article v-for="asset in mediaAssets" :key="asset.id" class="media-card">
+                <div class="media-thumb"><img :src="asset.url" :alt="asset.name" /><span v-if="asset.type === 'VIDEO'"><Video :size="14" /> VIDEO</span></div>
+                <div><strong>{{ asset.name }}</strong><small>{{ asset.type }} / {{ asset.size }} / {{ asset.date }}</small></div>
+              </article>
+            </div>
+          </section>
 
-          <section v-else class="admin-panel"><div class="panel-title"><div><span class="panel-kicker">SETTINGS / 04</span><h2>公开页面设置</h2></div></div><div class="setting-block"><div><strong>公开状态</strong><span>分享链接当前可被访问，访客只能读取已发布内容。</span></div><span class="status-pill"><i></i> PUBLIC / READ ONLY</span></div><div class="setting-block"><div><strong>选择视觉主题</strong><span>主题配置会同步到公开主页，内容与权限保持不变。</span></div><div class="appearance-options"><button v-for="theme in themeOptions" :key="theme.id" class="appearance-choice" :class="{ selected: profile.theme === theme.id }" @click="setTheme(theme.id)"><span class="swatch" :class="`swatch-${theme.id}`"></span><strong>{{ theme.label }}</strong><small>{{ theme.note }}</small></button></div></div><div class="admin-boundary"><ShieldCheck :size="18" /><div><strong>权限边界</strong><p>公开页不提供任何写入接口；接入正式服务器后，这里会替换为真实账号、会话和内容 API。</p></div></div></section>
+          <section v-else class="admin-panel">
+            <div class="panel-title"><div><span class="panel-kicker">SETTINGS</span><h2>公开页面设置</h2></div></div>
+            <div class="setting-block"><div><strong>公开状态</strong><span>分享链接当前可被访问，访客只能读取已发布内容。</span></div><span class="status-pill"><i></i> PUBLIC / READ ONLY</span></div>
+            <div class="setting-block">
+              <div><strong>选择视觉主题</strong><span>主题配置会同步到公开主页，内容与权限保持不变。</span></div>
+              <div class="appearance-options">
+                <button v-for="theme in themeOptions" :key="theme.id" class="appearance-choice" :class="{ selected: profile.theme === theme.id }" @click="setTheme(theme.id)">
+                  <span class="swatch" :class="`swatch-${theme.id}`"></span>
+                  <strong>{{ theme.label }}</strong>
+                  <small>{{ theme.note }}</small>
+                </button>
+              </div>
+            </div>
+            <div class="admin-boundary"><ShieldCheck :size="18" /><div><strong>权限边界</strong><p>公开页不提供写入接口；接入正式服务器后，这里可替换为真实账号、会话和内容 API。</p></div></div>
+          </section>
         </section>
       </div>
     </main>
 
-    <footer v-if="activeView === 'public'" class="site-footer page-width"><span>© {{ new Date().getFullYear() }} {{ profile.name }} / FIELDNOTE</span><span>MADE TO BE SHARED <Sparkles :size="14" /></span></footer>
+    <footer v-if="activeView === 'public'" class="site-footer page-width">
+      <span>© {{ new Date().getFullYear() }} {{ profile.name }} / JOURNEY CHRONICLE</span>
+      <span>BUILT FOR LIVING ARCHIVES <Sparkles :size="14" /></span>
+    </footer>
 
-    <div v-if="selectedEntry" class="detail-backdrop" @click.self="selectedEntry = null"><article class="detail-modal"><button class="modal-close icon-button" title="关闭详情" @click="selectedEntry = null"><X :size="17" /></button><img :src="selectedEntry.image" :alt="selectedEntry.title" /><div class="modal-content"><div class="trace-meta"><span>{{ selectedEntry.category }}</span><time>{{ selectedEntry.date }}</time></div><h2>{{ selectedEntry.title }}</h2><p class="trace-place"><MapPin :size="13" /> {{ selectedEntry.place }}</p><p class="modal-body">{{ selectedEntry.body }}</p><div class="mini-tags"><span v-for="tag in selectedEntry.tags.split(',')" :key="tag">{{ tag.trim() }}</span></div><div class="modal-metric">{{ selectedEntry.metric }}</div></div></article></div>
+    <div v-if="selectedEntry" class="detail-backdrop" @click.self="selectedEntry = null">
+      <article class="detail-modal">
+        <button class="modal-close icon-button" title="关闭详情" @click="selectedEntry = null"><X :size="17" /></button>
+        <img :src="selectedEntry.image" :alt="selectedEntry.title" />
+        <div class="modal-content">
+          <div class="trace-meta"><span>{{ selectedEntry.category }}</span><span>{{ selectedEntry.date }}</span></div>
+          <h2>{{ selectedEntry.title }}</h2>
+          <p class="trace-place"><MapPin :size="13" /> {{ selectedEntry.place }}</p>
+          <p class="modal-body">{{ selectedEntry.body }}</p>
+          <div class="mini-tags"><span v-for="tag in selectedEntry.tags.split(',')" :key="tag">{{ tag.trim() }}</span></div>
+          <div class="modal-metric">{{ selectedEntry.metric }}</div>
+        </div>
+      </article>
+    </div>
   </div>
 </template>
